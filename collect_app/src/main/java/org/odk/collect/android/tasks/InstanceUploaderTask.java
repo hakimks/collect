@@ -27,6 +27,7 @@ import org.odk.collect.android.listeners.InstanceUploaderListener;
 import org.odk.collect.android.preferences.GeneralSharedPreferences;
 import org.odk.collect.android.preferences.GeneralKeys;
 import org.odk.collect.android.provider.InstanceProviderAPI;
+import org.odk.collect.android.provider.InstanceProviderAPI.InstanceColumns;
 import org.odk.collect.android.upload.InstanceServerUploader;
 import org.odk.collect.android.utilities.ApplicationConstants;
 
@@ -69,7 +70,7 @@ public abstract class InstanceUploaderTask extends AsyncTask<Long, Integer, Inst
 
                         StringBuilder selection = new StringBuilder();
 
-                        selection.append(InstanceProviderAPI.InstanceColumns._ID + " IN (");
+                        selection.append(InstanceColumns._ID + " IN (");
                         int i = 0;
 
                         while (it.hasNext() && i < selectionArgs.length - 1) {
@@ -102,9 +103,9 @@ public abstract class InstanceUploaderTask extends AsyncTask<Long, Integer, Inst
 
                                 String formId;
                                 while (results.moveToNext()) {
-                                    formId = results.getString(results.getColumnIndex(InstanceProviderAPI.InstanceColumns.JR_FORM_ID));
+                                    formId = results.getString(results.getColumnIndex(InstanceColumns.JR_FORM_ID));
                                     if (InstanceServerUploader.formShouldBeAutoDeleted(formId, isFormAutoDeleteOptionEnabled)) {
-                                        toDelete.add(results.getLong(results.getColumnIndex(InstanceProviderAPI.InstanceColumns._ID)));
+                                        toDelete.add(results.getLong(results.getColumnIndex(InstanceColumns._ID)));
                                     }
                                 }
 
@@ -149,7 +150,7 @@ public abstract class InstanceUploaderTask extends AsyncTask<Long, Integer, Inst
      * finalized form is written messages to {@link #messagesByInstanceId}. In the case of an
      * authentication request from the server, {@link #authRequestingServer} is set instead.
      */
-    static class Outcome {
+    public static class Outcome {
         /**
          * The URI for the server that requested authentication when the latest finalized form was
          * attempted to be sent. This URI may not match the server specified in the app settings or
@@ -159,7 +160,7 @@ public abstract class InstanceUploaderTask extends AsyncTask<Long, Integer, Inst
          * When this field is set, the overall submission attempt is halted so that the user can be
          * asked for credentials. Once credentials are provided, the submission attempt resumes.
          */
-        Uri authRequestingServer;
+        public Uri authRequestingServer;
 
 
         /**
@@ -175,6 +176,6 @@ public abstract class InstanceUploaderTask extends AsyncTask<Long, Integer, Inst
          * TODO: Consider mapping to something machine-readable like a message ID or status ID
          * instead of a mix of localized and non-localized user-facing strings.
          */
-        HashMap<String, String> messagesByInstanceId = new HashMap<>();
+        public HashMap<String, String> messagesByInstanceId = new HashMap<>();
     }
 }

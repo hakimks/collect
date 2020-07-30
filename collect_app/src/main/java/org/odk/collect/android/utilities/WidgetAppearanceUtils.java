@@ -36,6 +36,7 @@ public class WidgetAppearanceUtils {
     public static final String ISLAMIC                  = "islamic";
     public static final String BIKRAM_SAMBAT            = "bikram-sambat";
     public static final String MYANMAR                  = "myanmar";
+    public static final String PERSIAN                  = "persian";
     public static final String NO_CALENDAR              = "no-calendar";
     public static final String MONTH_YEAR               = "month-year";
     public static final String YEAR                     = "year";
@@ -52,6 +53,7 @@ public class WidgetAppearanceUtils {
     public static final String AUTOCOMPLETE             = "autocomplete";
     public static final String LIST_NO_LABEL            = "list-nolabel";
     public static final String LIST                     = "list";
+    public static final String LIKERT                   = "likert";
     public static final String LABEL                    = "label";
     public static final String IMAGE_MAP                = "image-map";
     public static final String NO_BUTTONS               = "no-buttons";
@@ -84,8 +86,7 @@ public class WidgetAppearanceUtils {
     }
 
     // Get appearance hint and clean it up so it is lower case, without the search function and never null.
-    @NonNull
-    public static String getSanitizedAppearanceHint(FormEntryPrompt fep) {
+    public static @NonNull String getSanitizedAppearanceHint(FormEntryPrompt fep) {
         String appearance = fep.getAppearanceHint();
         if (appearance == null) {
             appearance = NO_APPEARANCE;
@@ -100,6 +101,11 @@ public class WidgetAppearanceUtils {
         }
 
         return appearance;
+    }
+
+    /** Returns whether an appearance is present.  (Appearances are the constants above.) */
+    public static boolean hasAppearance(FormEntryPrompt fep, String appearance) {
+        return getSanitizedAppearanceHint(fep).contains(appearance);
     }
 
     /*
@@ -160,5 +166,17 @@ public class WidgetAppearanceUtils {
 
     public static boolean isCompactAppearance(FormEntryPrompt prompt) {
         return getSanitizedAppearanceHint(prompt).contains(COMPACT);
+    }
+
+    public static boolean useThousandSeparator(FormEntryPrompt prompt) {
+        return getSanitizedAppearanceHint(prompt).contains(WidgetAppearanceUtils.THOUSANDS_SEP);
+    }
+
+    public static boolean isFlexAppearance(FormEntryPrompt prompt) {
+        String appearance = getSanitizedAppearanceHint(prompt);
+
+        return !appearance.startsWith(WidgetAppearanceUtils.COMPACT_N) && (appearance.startsWith(WidgetAppearanceUtils.COMPACT)
+                || appearance.startsWith(WidgetAppearanceUtils.QUICKCOMPACT)
+                || appearance.startsWith(WidgetAppearanceUtils.COLUMNS_PACK));
     }
 }

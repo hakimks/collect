@@ -6,12 +6,7 @@
   <string name="annotate_image">इमेज पर टिप्पणी करें</string>
   <string name="view_video">वीडियो देखें</string>
   <string name="choose_audio">ऑडियो चुनें</string>
-  <string name="add_another"> समूह जोड़ें</string>
-  <string name="add_another_repeat">एक और “%s” समूह जोड़ें</string>
-  <string name="add_repeat">एक नया \"%s\" समूह जोड़ें?</string>
-  <string name="add_repeat_no">न जोड़ें</string>
-  <string name="audio_file_error">कोई ऑडियो फाइल निर्दिष्ट नहीं की गई थी।</string>
-  <string name="audio_file_invalid">फाइल: %s मान्य ऑडियो फाइल नहीं.</string>
+  <!--This sentence is used in the dialog for adding repeats and will be completed by a singular noun usually. Examples would be ‘Add “observation”?’ or ‘Add “Reading”?’. If the phrase doesn’t make sense in your language you can add a word like “new”, being careful of gender/plural.-->
   <string name="cancel">रद्द करें</string>
   <string name="cancel_loading_form">रद्द करें</string>
   <string name="cancel_location">रद्द करें</string>
@@ -50,8 +45,6 @@
   <string name="do_not_change">रद्द करें</string>
   <string name="do_not_exit">रद्द करें </string>
   <string name="do_not_save">बदलावों पर ध्यान न दें</string>
-  <string name="entering_repeat">समूह जोड़ें</string>
-  <string name="entering_repeat_ask">नया समूह जोड़ें</string>
   <string name="enter_data">खाली फॉर्म भरें</string>
   <string name="enter_data_button">खाली फॉर्म भरें</string>
   <string name="error_occured">गलती हुई</string>
@@ -73,15 +66,9 @@
   <string name="jump_to_beginning">शुरु पर जाएं</string>
   <string name="jump_to_end">अंत पर जाएं</string>
   <string name="jump_to_previous">ऊपर जाएं</string>
-  <string name="leave_repeat_yes">न जोड़ें</string>
-  <string name="leaving_repeat_ask">एक और समूह जोड़ें?</string>
-  <string name="list_failed_with_error">फॉर्म  सूचीकरण असफल%s </string>
-  <string name="loading_form">फॉर्म लोड हो रहा है </string>
+    <string name="loading_form">फॉर्म लोड हो रहा है </string>
   <string name="load_remote_form_error">सूची से फॉर्म प्राप्ति में गलती </string>
-  <string name="location_provider_accuracy">%1$sको प्रयोग कर रहा है. शुद्धता %2$sमीटर है.</string>
-  <string name="location_accuracy">शुद्धता %1$s मीटर है</string>
-  <string name="main_menu">मुख्य मेन्यू</string>
-  <string name="main_menu_details">डेटा कलेक्शन अब आसान…</string>
+    <string name="location_accuracy">शुद्धता %1$s मीटर है</string>
   <string name="manage_files">संरक्षित फॉर्म मिटायें</string>
   <string name="mark_finished">फॉर्म पूरा करें</string>
   <string name="noselect_error">क्षमा करें, आपने कोई फॉर्म नही चुना है!</string>
@@ -92,8 +79,6 @@
   <string name="no_items_display_instances">प्रदर्शित करने के लिए कुछ भी उपलब्ध नहीं.\n\nभेजने से पहले संरक्षित फॉर्म को अंतिम रूप देने का प्रयास हो रहा.</string>
   <string name="ok">ओके</string>
   <string name="parse_error">क्षमा करें, फॉर्म पार्स करने में असमर्थ</string>
-  <string name="parse_legacy_formlist_failed">सर्वर ने उपलब्ध-फ़ॉर्म दस्तावेज़ प्रदान नहीं किया जो Aggregate 0.9.x. से संगतता रखता हो: %s</string>
-  <string name="parse_openrosa_formlist_failed">सर्वर ने उपलब्ध-फ़ॉर्म दस्तावेज़ प्रदान नहीं किया जो OpenRosa version 1.0 मानकों से संगतता रखता हो: %s</string>
   <string name="password">पासवर्ड</string>
   <string name="play_video">वीडियो चलाएं</string>
   <string name="please_wait">कृपया कुछ क्षण प्रतीक्षा करें</string>
@@ -133,19 +118,12 @@
   <string name="change_splash_path">इमेज बदले</string>
   <string name="keep_changes">बदलाव संरक्षित करें</string>
   <string name="change_formlist_url">फॉर्म सूची पथ (URL पर जोड़ा गया)</string>
-  <string name="change_protocol">प्लेटफोर्म</string>
-  <string name="change_submission_url">सबमिशन पथ (URL पर जोड़ा गया)</string>
+    <string name="change_submission_url">सबमिशन पथ (URL पर जोड़ा गया)</string>
   <string name="formlist_url">फॉर्म सूची पथ</string>
   <string name="submission_url">सबमिशन पथ</string>
   <string name="font_size">अक्षर फॉन्ट आकार</string>
   <string name="change_font_size">अक्षर फॉन्ट आकार</string>
-  <string name="access_error">%s:प्राप्ति के समय गलती</string>
-  <string name="manifest_server_error">मैन्फेस्ट उत्तर किसी OpenRosa version को रिपोर्ट नहीं करता - खराब सर्वर?</string>
-  <string name="root_element_error">रूट एलिमेंट &amp; नहीं है यह;\&amp;gt को दिखाता है; — जोकि %sथा</string>
-  <string name="root_namespace_error">रूट एलिमेंट नेमस्पेस गलत है: %s</string>
-  <string name="manifest_tag_error">मेन्फेस्ट एंट्री %sमें एक या अधिक टैग लापता हैं: फ़ाइल नाम, हैश, या डाउनलोडUrl</string>
   <string name="form_download_progress">%1$s. %3$sकी %2$sमीडिया फाइलें मिल रही हैं: </string>
-  <string name="file_fetch_failed">गलती: %1$sपर %2$s (%3$s)  </string>
   <string name="fetching_manifest">%s. मेनीफेस्ट मिल रहा है </string>
   <string name="success">सफल</string>
   <string name="no_forms_uploaded">क्षमा करें, कोई फॉर्म अपलोड नहीं किया गया.</string>
@@ -160,9 +138,7 @@
   <string name="save_as_error">संरक्षित नाम रिक्त नहीं होना चाहिए!</string>
   <string name="edit_prompt">Prompt को संशोधित करें</string>
   <string name="selected_google_account_text">गूगल अकाउंट</string>
-  <string name="server_platform_odk_aggregate">ODK Aggregate</string>
-  <string name="server_platform_other">अन्य</string>
-  <string name="font_size_extra_large">ज्यादा बड़ा</string>
+    <string name="font_size_extra_large">ज्यादा बड़ा</string>
   <string name="font_size_large">बड़ा</string>
   <string name="font_size_medium">मझला</string>
   <string name="font_size_small">छोटा</string>
@@ -206,7 +182,6 @@
   <string name="autosend">स्वतः भेजें</string>
   <string name="found_in_main">मुख्य मेनू से छुपाने के लिए अनचेक करें</string>
   <string name="found_in_settings">सामान्य सेटिंग्स से छुपाने के लिए अनचेक करें</string>
-  <string name="save_preferences">सेटिंग्स डिस्क पर संरक्षित करे</string>
   <string name="form_forward">आगामी</string>
   <string name="navigation">पथ प्रदर्शन</string>
   <string name="swipe_navigation">क्षैतिज स्वाइप प्रयोग करें</string>
@@ -258,10 +233,7 @@
   <string name="go_drive">माई ड्राइव</string>
   <string name="go_shared">मेरे साथ साझा किया हुआ </string>
   <string name="modified_on_date_at_time">EEE, MMM dd, yyyy \'पर संशोधित\' HH:mm \'पर\' </string>
-  <string name="aggregate_preferences">ODK Aggregate सेटिंग्स</string>
-  <string name="other_preferences">अन्य प्लेटफ़ॉर्म सेटिंग्स</string>
-  <string name="google_preferences">गुगल सीट सेटिंग</string>
-  <string name="google_sheets_url_hint">फॉर्म को एक सबमिशन URL सेट करना होगा यदि नहीं तो इस URL का उपयोग किया जाएगा।</string>
+    <string name="google_sheets_url_hint">फॉर्म को एक सबमिशन URL सेट करना होगा यदि नहीं तो इस URL का उपयोग किया जाएगा।</string>
   <string name="drive_get_file"> %1$sऔर मीडिया फाइलों को प्राप्त कर रहा है.</string>
   <string name="no_google_account">कोई गूगल अकाउंट नही चुना!</string>
   <string name="google_set_account">आपने गूगल शीत को अपने सर्वर के रूप में चुना है, कृपया जारी रखने से पहले सामान्य सेटिंग में संबंधित  गूगल अकाउंट का चयन करें</string>
@@ -280,23 +252,18 @@
   <string name="google_play_services_error_occured">गूगल मानचित्र तक पहुंचने में असमर्थ क्या गूगल प्ले सर्विस इनस्टॉल है?</string>
   <string name="about_preferences">बारे में </string>
   <!--Geo string added in feature-geofeatures branch-->
-  <string name="map_preferences">मानचित्रण</string>
-  <string name="map_sdk_selector_title">मानचित्रण SDK</string>
-  <string name="map_sdk_behavior">मानचित्रण SDK</string>
-  <string name="google_maps_sdk">गूगल मैप SDK</string>
-  <string name="openstreetmap_sdk">ओपन स्ट्रीट मैप SDK</string>
-  <string name="show_map_sdk">मैप SDK विकल्प दिखायें </string>
-  <string name="openmap_streets">OSM स्ट्रीट</string>
+  <!--TODO(ping): Delete these openmap_* strings when we're ready to move on from OSMDroid.
+      These strings are only being used to preserve compatibility with pre-existing
+       tile caches, and are not shown in the UI.-->
   <string name="openmap_usgs_topo">USGS National Map Topo</string>
   <string name="openmap_stamen_terrain">स्टैमन टेरेन</string>
   <string name="openmap_cartodb_positron">CartoDB Positron</string>
   <string name="openmap_cartodb_darkmatter">CartoDB डार्क मैटर</string>
+  <string name="basemap">बेसमैप</string>
   <string name="streets">स्ट्रीट</string>
   <string name="terrain"> भूभाग</string>
   <string name="hybrid">हाइब्रिड </string>
   <string name="satellite">उपग्रह</string>
-  <string name="map_basemap_selector_title">बेसमैप्स</string>
-  <string name="show_map_basemap">बेसमैप विकल्प दिखाएं</string>
   <string name="save_point">जिओपॉइंट संरक्षित करे</string>
   <string name="get_point"> जिओपॉइंट शुरू करे </string>
   <string name="geopoint_view_read_only">जिओपॉइंट  देखे</string>
@@ -306,9 +273,7 @@
   <string name="start">शुरु करे</string>
   <string name="enable_gps">जीपीएस सक्षम करें</string>
   <string name="geotrace_title">जिओ ट्रेस</string>
-    <string name="gps_enable_message">आपके डिवाइस में जीपीएस सक्षम नही है. क्या आप इसे सक्षम करना चाहेंगे?</string>
-  <string name="select_offline_layer">ऑफ़लाइन लेयर चुनें</string>
-    <string name="geo_clear_warning">फीचर पहले से ही बना है. क्या आप फीचर को क्लियर करना चाहेंगे?</string>
+  <string name="geo_clear_warning">फीचर पहले से ही बना है. क्या आप फीचर को क्लियर करना चाहेंगे?</string>
   <string name="geo_exit_warning">परिवर्तनों को रद्द करें और वापस ODK पर लौटें?</string>
   <string name="polygon_validator">बहुभुज बनाने के लिए कम से कम 3 पॉइंट होने चाहिए</string>
   <string name="clear">स्पष्ट</string>
@@ -406,27 +371,16 @@
   <string name="select_time">समय चुनें</string>
   <string name="no_date_selected">कोई दिनांक चयनित नहीं</string>
   <string name="no_time_selected">कोई समय चयनित नहीं</string>
-  <string name="import_settings">आयात / निर्यात सेटिंग्स</string>
-  <string name="qr_code">क्यूआर कोड</string>
-  <string name="scan_qrcode">अन्य डिवाइस से कोड स्कैन करें</string>
   <string name="successfully_imported_settings">सेटिंग सफलतापूर्वक आयातित की गईं</string>
   <string name="encoding_max_limit">अधिकतम वर्ण सीमा आ गयी: सभी सेटिंग्स के लिए क्यूआर कोड नहीं बनाया जा सकता</string>
   <string name="share">शेयर</string>
-  <string name="select_qrcode">एसडी कार्ड से कोड का चयन करें</string>
   <string name="turn_on_flashlight">टॉर्च चालू करें</string>
   <string name="turn_off_flashlight">टॉर्च को बंद करें</string>
-  <string name="qrcode_with_both_passwords">इस QR कोड में आपका एडमिन और सर्वर पासवर्ड शामिल है. कृपया ध्यान से करें \n (पासवर्ड हटाने के लिए टैप करें).</string>
-  <string name="qrcode_without_passwords">इस QR कोड में आपके एडमिन या सर्वर पासवर्ड शामिल नहीं हैं I \ N (पासवर्ड जोड़ने के लिए टैप करें)</string>
-  <string name="qrcode_with_admin_password">इस QR कोड में आपका एडमिन पासवर्ड शामिल है. कृपया इसे ध्यान से करें \n (पासवर्ड हटाने के लिए टैप करें). </string>
-  <string name="qrcode_with_server_password">इस QR कोड में आपका सर्वर पासवर्ड शामिल है \n (पासवर्ड हटाने के लिए टैप करें)</string>
-  <string name="import_export_settings">आयात / निर्यात सेटिंग्स</string>
-  <string name="qrcode_scanner_prompt">QR कोड आयत के अंदर रखें</string>
   <string name="server_password">सर्वर पासवर्ड</string>
   <string name="include_password_dialog">पासवर्ड कोड में शामिल </string>
   <string name="generate">उत्पन्न</string>
   <string name="invalid_qrcode">QR कोड में मान्य सेटिंग्स शामिल नहीं हैं I</string>
-  <string name="share_qrcode">QR कोड साझा करें</string>
-  <string name="take_picture_instruction">तस्वीर लेने के लिए स्क्रीन को टैप करें</string>
+    <string name="take_picture_instruction">तस्वीर लेने के लिए स्क्रीन को टैप करें</string>
   <string name="camera_error">यह डिवाइस Camera2 API का समर्थन नहीं करता है</string>
   <string name="invalid_range_widget">इस विजेट में अमान्य मापदंड हैं!</string>
   <string name="form_entry_setting">फॉर्म एंट्री सेटिंग</string>
@@ -442,7 +396,6 @@
   <string name="wifi_autosend">केवल वाई-फाई </string>
   <string name="cellular_autosend"> केवल सेलुलर</string>
   <string name="wifi_cellular_autosend">वाई-फाई या सेलुलर</string>
-  <string name="map_basemap_behavior_title">बेसमैप</string>
   <string name="form_management_preferences">फॉर्म मैनेजमेंट</string>
   <string name="form_submission_category">फॉर्म भेजना</string>
   <string name="form_filling_category">फॉर्म भरना</string>
@@ -455,7 +408,6 @@
   <string name="type">प्रकार</string>
   <string name="form_entry">फॉर्म एंट्री से छुपाने के लिए चेक हटायें</string>
   <string name="use_device_language">डिवाइस की भाषा प्रयोग करें </string>
-  <string name="not_supported_offline_layer_format">चयनित ऑफलाइन लेयर फाइल PBF फॉर्मेट उपयोग करती है जो कि समर्थित नहीं है! </string>
   <!--<string name="submission_transport_admin_setting">Submission transport</string>-->
   <string name="search">खोज</string>
   <!--Displays dates in specialized calendars with the Gregorian dates in parentheses. This is translated so right-to-left languages can specify the correct order-->
@@ -463,5 +415,4 @@
   <string name="yes">हाँ</string>
   <string name="no">नहीं</string>
   <string name="start_video_capture_instruction">रिकॉर्डिंग प्रारंभ करने के लिए स्क्रीन को टैप करें</string>
-  <!--Sms submission-->
 </resources>

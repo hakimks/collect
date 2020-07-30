@@ -18,10 +18,15 @@ import android.content.Context;
 import android.content.Intent;
 import android.view.View;
 import android.widget.Button;
-import org.javarosa.form.api.FormEntryPrompt;
+
 import org.odk.collect.android.R;
 import org.odk.collect.android.activities.DrawActivity;
+import org.odk.collect.android.formentry.questions.QuestionDetails;
+import org.odk.collect.android.formentry.questions.WidgetViewUtils;
+import org.odk.collect.android.widgets.interfaces.ButtonClickListener;
+import org.odk.collect.android.widgets.utilities.WaitingForDataRegistry;
 
+import static org.odk.collect.android.formentry.questions.WidgetViewUtils.createSimpleButton;
 import static org.odk.collect.android.utilities.ApplicationConstants.RequestCodes;
 
 /**
@@ -29,22 +34,22 @@ import static org.odk.collect.android.utilities.ApplicationConstants.RequestCode
  *
  * @author BehrAtherton@gmail.com
  */
-public class SignatureWidget extends BaseImageWidget {
+public class SignatureWidget extends BaseImageWidget implements ButtonClickListener {
 
-    private Button signButton;
+    Button signButton;
 
-    public SignatureWidget(Context context, FormEntryPrompt prompt) {
-        super(context, prompt);
+    public SignatureWidget(Context context, QuestionDetails prompt, WaitingForDataRegistry waitingForDataRegistry) {
+        super(context, prompt, waitingForDataRegistry);
         imageClickHandler = new DrawImageClickHandler(DrawActivity.OPTION_SIGNATURE, RequestCodes.SIGNATURE_CAPTURE, R.string.signature_capture);
         setUpLayout();
         addCurrentImageToLayout();
-        addAnswerView(answerLayout);
+        addAnswerView(answerLayout, WidgetViewUtils.getStandardMargin(context));
     }
 
     @Override
     protected void setUpLayout() {
         super.setUpLayout();
-        signButton = getSimpleButton(getContext().getString(R.string.sign_button));
+        signButton = createSimpleButton(getContext(), getFormEntryPrompt().isReadOnly(), getContext().getString(R.string.sign_button), getAnswerFontSize(), this);
 
         answerLayout.addView(signButton);
         answerLayout.addView(errorTextView);
@@ -55,6 +60,11 @@ public class SignatureWidget extends BaseImageWidget {
     @Override
     public Intent addExtrasToIntent(Intent intent) {
         return intent;
+    }
+
+    @Override
+    protected boolean doesSupportDefaultValues() {
+        return true;
     }
 
     @Override

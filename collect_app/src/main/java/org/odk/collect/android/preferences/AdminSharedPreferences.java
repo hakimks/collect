@@ -14,9 +14,12 @@
 
 package org.odk.collect.android.preferences;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 
 import org.odk.collect.android.application.Collect;
+import org.odk.collect.android.injection.DaggerUtils;
 
 import static org.odk.collect.android.preferences.AdminKeys.ALL_KEYS;
 import static org.odk.collect.android.preferences.AdminKeys.KEY_ADMIN_PW;
@@ -24,18 +27,19 @@ import static org.odk.collect.android.preferences.AdminPreferencesFragment.ADMIN
 
 public class AdminSharedPreferences {
 
-    private static AdminSharedPreferences instance;
-    private final android.content.SharedPreferences sharedPreferences;
+    private final SharedPreferences sharedPreferences;
 
-    private AdminSharedPreferences() {
-        sharedPreferences = Collect.getInstance().getSharedPreferences(ADMIN_PREFERENCES, 0);
+    public AdminSharedPreferences(Context context) {
+        sharedPreferences = context.getSharedPreferences(ADMIN_PREFERENCES, 0);
     }
 
+    /**
+     * Shouldn't use a static helper to inject instance into objects. Either use constructor
+     * injection or Dagger if needed.
+     */
+    @Deprecated
     public static synchronized AdminSharedPreferences getInstance() {
-        if (instance == null) {
-            instance = new AdminSharedPreferences();
-        }
-        return instance;
+        return DaggerUtils.getComponent(Collect.getInstance()).adminSharedPreferences();
     }
 
     public Object get(String key) {
@@ -91,5 +95,9 @@ public class AdminSharedPreferences {
         for (String key : ALL_KEYS) {
             save(key, get(key));
         }
+    }
+
+    public SharedPreferences getSharedPreferences() {
+        return sharedPreferences;
     }
 }

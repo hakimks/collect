@@ -4,9 +4,14 @@ import android.location.Location;
 
 import com.google.android.gms.location.LocationListener;
 
+import java.lang.ref.WeakReference;
+
+import androidx.annotation.Nullable;
+
 public class FakeLocationClient implements LocationClient {
     private boolean failOnStart;
-    private LocationClientListener clientListener;
+    private boolean failOnRequest;
+    private WeakReference<LocationClientListener> listenerRef;
     private LocationListener locationListener;
     private boolean running;
     private boolean locationAvailable = true;
@@ -21,6 +26,10 @@ public class FakeLocationClient implements LocationClient {
 
     public void setFailOnStart(boolean fail) {
         failOnStart = fail;
+    }
+
+    public void setFailOnRequest(boolean fail) {
+        failOnRequest = fail;
     }
 
     public void receiveFix(Location location) {
@@ -38,19 +47,20 @@ public class FakeLocationClient implements LocationClient {
 
     public void start() {
         running = true;
-        if (clientListener != null) {
+        if (getListener() != null) {
             if (failOnStart) {
-                clientListener.onClientStartFailure();
+                getListener().onClientStartFailure();
             } else {
-                clientListener.onClientStart();
+                getListener().onClientStart();
             }
         }
     }
 
     public void stop() {
         running = false;
-        if (clientListener != null) {
-            clientListener.onClientStop();
+        stopLocationUpdates();
+        if (getListener() != null) {
+            getListener().onClientStop();
         }
     }
 
@@ -59,6 +69,10 @@ public class FakeLocationClient implements LocationClient {
     }
 
     public void requestLocationUpdates(LocationListener locationListener) {
+        if (failOnRequest) {
+            throw new SecurityException();
+        }
+
         this.locationListener = locationListener;
     }
 
@@ -66,8 +80,13 @@ public class FakeLocationClient implements LocationClient {
         this.locationListener = null;
     }
 
-    public void setListener(LocationClientListener clientListener) {
-        this.clientListener = clientListener;
+    @Override
+    public void setListener(@Nullable LocationClientListener locationClientListener) {
+        this.listenerRef = new WeakReference<>(locationClientListener);
+    }
+
+    protected LocationClientListener getListener() {
+        return listenerRef != null ? listenerRef.get() : null;
     }
 
     public Location getLastLocation() {

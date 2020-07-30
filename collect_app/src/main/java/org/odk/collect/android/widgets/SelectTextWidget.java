@@ -21,11 +21,14 @@ import android.text.Editable;
 import android.text.Selection;
 import android.text.TextWatcher;
 import android.util.TypedValue;
+import android.view.View;
 import android.widget.EditText;
 import android.widget.TableLayout;
 
-import org.javarosa.form.api.FormEntryPrompt;
-import org.odk.collect.android.utilities.ViewIds;
+import org.odk.collect.android.formentry.questions.QuestionDetails;
+import org.odk.collect.android.formentry.questions.WidgetViewUtils;
+
+import static org.odk.collect.android.utilities.ViewUtils.pxFromDp;
 
 /**
  * A base widget class which is responsible for sharing the code used by simple select widgets like
@@ -36,7 +39,7 @@ public abstract class SelectTextWidget extends SelectWidget {
 
     protected EditText searchStr;
 
-    public SelectTextWidget(Context context, FormEntryPrompt prompt) {
+    public SelectTextWidget(Context context, QuestionDetails prompt) {
         super(context, prompt);
     }
 
@@ -48,13 +51,14 @@ public abstract class SelectTextWidget extends SelectWidget {
         }
     }
 
-    protected void setUpSearchBox() {
+    protected void setUpSearchBox(Context context) {
         searchStr = new EditText(getContext());
-        searchStr.setId(ViewIds.generateViewId());
+        searchStr.setId(View.generateViewId());
         searchStr.setTextSize(TypedValue.COMPLEX_UNIT_DIP, getAnswerFontSize());
 
         TableLayout.LayoutParams params = new TableLayout.LayoutParams();
-        params.setMargins(7, 5, 7, 5);
+        params.setMargins(pxFromDp(context, WidgetViewUtils.getStandardMargin(context)), 5,
+                pxFromDp(context, WidgetViewUtils.getStandardMargin(context)), 5);
         searchStr.setLayoutParams(params);
         setupChangeListener();
         answerLayout.addView(searchStr, 0);

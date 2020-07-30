@@ -82,7 +82,7 @@ public class CustomTabHelper {
         return packagesSupportingCustomTabs;
     }
 
-    // https://github.com/opendatakit/collect/issues/1221
+    // https://github.com/getodk/collect/issues/1221
     private Uri getNonNullUri(Uri url) {
         return url != null ? url : Uri.parse("");
     }
@@ -101,7 +101,7 @@ public class CustomTabHelper {
             try {
                 //open in external browser
                 context.startActivity(new Intent(Intent.ACTION_VIEW, uri));
-            } catch (ActivityNotFoundException e) {
+            } catch (ActivityNotFoundException | SecurityException e) {
                 //open in webview
                 Intent intent = new Intent(context, WebViewActivity.class);
                 intent.putExtra(OPEN_URL, uri.toString());

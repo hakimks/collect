@@ -16,15 +16,20 @@
 
 package org.odk.collect.android.database.helpers;
 
-import android.database.Cursor;
+import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteException;
 import android.database.sqlite.SQLiteOpenHelper;
 
-import org.odk.collect.android.application.Collect;
 import org.odk.collect.android.database.DatabaseContext;
 import org.odk.collect.android.provider.InstanceProviderAPI;
-import org.odk.collect.android.utilities.CustomSQLiteQueryBuilder;
+
+import org.odk.collect.android.storage.StoragePathProvider;
+import org.odk.collect.android.storage.StorageSubdirectory;
+import org.odk.collect.android.utilities.SQLiteUtils;
+
+import java.io.File;
+import java.util.Arrays;
+import java.util.List;
 
 import timber.log.Timber;
 
@@ -32,7 +37,8 @@ import static android.provider.BaseColumns._ID;
 import static org.odk.collect.android.provider.InstanceProviderAPI.InstanceColumns.CAN_EDIT_WHEN_COMPLETE;
 import static org.odk.collect.android.provider.InstanceProviderAPI.InstanceColumns.DELETED_DATE;
 import static org.odk.collect.android.provider.InstanceProviderAPI.InstanceColumns.DISPLAY_NAME;
-import static org.odk.collect.android.provider.InstanceProviderAPI.InstanceColumns.DISPLAY_SUBTEXT;
+import static org.odk.collect.android.provider.InstanceProviderAPI.InstanceColumns.GEOMETRY;
+import static org.odk.collect.android.provider.InstanceProviderAPI.InstanceColumns.GEOMETRY_TYPE;
 import static org.odk.collect.android.provider.InstanceProviderAPI.InstanceColumns.INSTANCE_FILE_PATH;
 import static org.odk.collect.android.provider.InstanceProviderAPI.InstanceColumns.JR_FORM_ID;
 import static org.odk.collect.android.provider.InstanceProviderAPI.InstanceColumns.JR_VERSION;
@@ -47,148 +53,155 @@ public class InstancesDatabaseHelper extends SQLiteOpenHelper {
     private static final String DATABASE_NAME = "instances.db";
     public static final String INSTANCES_TABLE_NAME = "instances";
 
-    private static final int DATABASE_VERSION = 4;
+    public static final int DATABASE_VERSION = 6;
 
-    private final String[] instancesTableColumnsInVersion4 = new String[] {_ID, DISPLAY_NAME, SUBMISSION_URI, CAN_EDIT_WHEN_COMPLETE,
-            INSTANCE_FILE_PATH, JR_FORM_ID, JR_VERSION, STATUS, LAST_STATUS_CHANGE_DATE, DISPLAY_SUBTEXT, DELETED_DATE};
+    private static final String[] COLUMN_NAMES_V5 = {_ID, DISPLAY_NAME, SUBMISSION_URI, CAN_EDIT_WHEN_COMPLETE,
+            INSTANCE_FILE_PATH, JR_FORM_ID, JR_VERSION, STATUS, LAST_STATUS_CHANGE_DATE, DELETED_DATE};
+
+    private static final String[] COLUMN_NAMES_V6 = {_ID, DISPLAY_NAME, SUBMISSION_URI,
+        CAN_EDIT_WHEN_COMPLETE, INSTANCE_FILE_PATH, JR_FORM_ID, JR_VERSION, STATUS,
+        LAST_STATUS_CHANGE_DATE, DELETED_DATE, GEOMETRY, GEOMETRY_TYPE};
+
+    public static final String[] CURRENT_VERSION_COLUMN_NAMES = COLUMN_NAMES_V6;
+
+    private static boolean isDatabaseBeingMigrated;
 
     public InstancesDatabaseHelper() {
-        super(new DatabaseContext(Collect.METADATA_PATH), DATABASE_NAME, null, DATABASE_VERSION);
+        super(new DatabaseContext(new StoragePathProvider().getDirPath(StorageSubdirectory.METADATA)), DATABASE_NAME, null, DATABASE_VERSION);
+    }
+
+    public static String getDatabasePath() {
+        return new StoragePathProvider().getDirPath(StorageSubdirectory.METADATA) + File.separator + DATABASE_NAME;
     }
 
     @Override
     public void onCreate(SQLiteDatabase db) {
-        createInstancesTable(db);
+        createInstancesTableV5(db, INSTANCES_TABLE_NAME);
+        upgradeToVersion6(db, INSTANCES_TABLE_NAME);
     }
 
+    /**
+     * Upgrades the database.
+     *
+     * When a new migration is added, a corresponding test case should be added to
+     * InstancesDatabaseHelperTest by copying a real database into assets.
+     */
     @SuppressWarnings({"checkstyle:FallThrough"})
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        Timber.i("Upgrading database from version %d to %d", oldVersion, newVersion);
+        try {
+            Timber.i("Upgrading database from version %d to %d", oldVersion, newVersion);
 
-        boolean success = true;
-        switch (oldVersion) {
-            case 1:
-                success = upgradeToVersion2(db);
-            case 2:
-                success &= upgradeToVersion3(db);
-            case 3:
-                success &= upgradeToVersion4(db);
-                break;
-            default:
-                Timber.i("Unknown version " + oldVersion);
-        }
+            switch (oldVersion) {
+                case 1:
+                    upgradeToVersion2(db);
+                case 2:
+                    upgradeToVersion3(db);
+                case 3:
+                    upgradeToVersion4(db);
+                case 4:
+                    upgradeToVersion5(db);
+                case 5:
+                    upgradeToVersion6(db, INSTANCES_TABLE_NAME);
+                    break;
+                default:
+                    Timber.i("Unknown version %d", oldVersion);
+            }
 
-        if (success) {
-            Timber.i("Upgrading database from version " + oldVersion + " to " + newVersion + " completed with success.");
-        } else {
-            Timber.e("Upgrading database from version " + oldVersion + " to " + newVersion + " failed.");
+            Timber.i("Upgrading database from version %d to %d completed with success.", oldVersion, newVersion);
+            isDatabaseBeingMigrated = false;
+        } catch (SQLException e) {
+            isDatabaseBeingMigrated = false;
+            throw e;
         }
     }
 
     @Override
     public void onDowngrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        boolean success = true;
-        switch (newVersion) {
-            case 4:
-                success = downgrade(db, instancesTableColumnsInVersion4);
-                break;
+        try {
+            Timber.i("Downgrading database from version %d to %d", oldVersion, newVersion);
 
-            default:
-                Timber.i("Unknown version " + newVersion);
-        }
+            String temporaryTableName = INSTANCES_TABLE_NAME + "_tmp";
+            createInstancesTableV5(db, temporaryTableName);
+            upgradeToVersion6(db, temporaryTableName);
 
-        if (success) {
-            Timber.i("Downgrading database completed with success.");
-        } else {
-            Timber.e("Downgrading database from version " + oldVersion + " to " + newVersion + " failed.");
+            dropObsoleteColumns(db, CURRENT_VERSION_COLUMN_NAMES, temporaryTableName);
+            Timber.i("Downgrading database from version %d to %d completed with success.", oldVersion, newVersion);
+            isDatabaseBeingMigrated = false;
+        } catch (SQLException e) {
+            isDatabaseBeingMigrated = false;
+            throw e;
         }
     }
 
-    private boolean upgradeToVersion2(SQLiteDatabase db) {
-        boolean success = true;
-        try {
-            db.execSQL("ALTER TABLE " + INSTANCES_TABLE_NAME + " ADD COLUMN "
-                    + CAN_EDIT_WHEN_COMPLETE + " text;");
+    private void upgradeToVersion2(SQLiteDatabase db) {
+        if (!SQLiteUtils.doesColumnExist(db, INSTANCES_TABLE_NAME, CAN_EDIT_WHEN_COMPLETE)) {
+            SQLiteUtils.addColumn(db, INSTANCES_TABLE_NAME, CAN_EDIT_WHEN_COMPLETE, "text");
+
             db.execSQL("UPDATE " + INSTANCES_TABLE_NAME + " SET "
-                    + CAN_EDIT_WHEN_COMPLETE + " = '" + Boolean.toString(true)
+                    + CAN_EDIT_WHEN_COMPLETE + " = '" + true
                     + "' WHERE " + STATUS + " IS NOT NULL AND "
                     + STATUS + " != '" + InstanceProviderAPI.STATUS_INCOMPLETE
                     + "'");
-        } catch (SQLiteException e) {
-            Timber.e(e);
-            success = false;
         }
-        return success;
     }
 
-    private boolean upgradeToVersion3(SQLiteDatabase db) {
-        boolean success = true;
-        try {
-            db.execSQL("ALTER TABLE " + INSTANCES_TABLE_NAME + " ADD COLUMN "
-                    + JR_VERSION + " text;");
-        } catch (SQLiteException e) {
-            Timber.e(e);
-            success = false;
-        }
-        return success;
+    private void upgradeToVersion3(SQLiteDatabase db) {
+        SQLiteUtils.addColumn(db, INSTANCES_TABLE_NAME, JR_VERSION, "text");
     }
 
-    private boolean upgradeToVersion4(SQLiteDatabase db) {
-        boolean success = true;
-        try {
-            Cursor cursor = db.rawQuery("SELECT * FROM " + INSTANCES_TABLE_NAME + " LIMIT 0", null);
-            int columnIndex = cursor.getColumnIndex(DELETED_DATE);
-            cursor.close();
-
-            // Only add the column if it doesn't already exist
-            if (columnIndex == -1) {
-                db.execSQL("ALTER TABLE " + INSTANCES_TABLE_NAME + " ADD COLUMN "
-                        + DELETED_DATE + " date;");
-            }
-        } catch (SQLiteException e) {
-            Timber.e(e);
-            success = false;
-        }
-        return success;
+    private void upgradeToVersion4(SQLiteDatabase db) {
+        SQLiteUtils.addColumn(db, INSTANCES_TABLE_NAME, DELETED_DATE, "date");
     }
 
-    private boolean downgrade(SQLiteDatabase db, String[] instancesTableColumns) {
-        boolean success = true;
-        String temporaryTable = INSTANCES_TABLE_NAME + "_tmp";
+    /**
+     * Upgrade to version 5. Prior versions of the instances table included a {@code displaySubtext}
+     * column which was redundant with the {@link InstanceProviderAPI.InstanceColumns#STATUS} and
+     * {@link InstanceProviderAPI.InstanceColumns#LAST_STATUS_CHANGE_DATE} columns and included
+     * unlocalized text. Version 5 removes this column.
+     */
+    private void upgradeToVersion5(SQLiteDatabase db) {
+        String temporaryTableName = INSTANCES_TABLE_NAME + "_tmp";
 
-        try {
-            CustomSQLiteQueryBuilder
-                    .begin(db)
-                    .renameTable(INSTANCES_TABLE_NAME)
-                    .to(temporaryTable)
-                    .end();
+        // onDowngrade in Collect v1.22 always failed to clean up the temporary table so remove it now.
+        // Going from v1.23 to v1.22 and back to v1.23 will result in instance status information
+        // being lost.
+        SQLiteUtils.dropTable(db, temporaryTableName);
 
-            createInstancesTable(db);
-
-            // Try to avoid renaming columns in the future since restoring data after downgrade might not work
-            CustomSQLiteQueryBuilder
-                    .begin(db)
-                    .insertInto(INSTANCES_TABLE_NAME)
-                    .columnsForInsert(instancesTableColumns)
-                    .select()
-                    .columnsForSelect(instancesTableColumns)
-                    .from(temporaryTable)
-                    .end();
-
-            CustomSQLiteQueryBuilder
-                    .begin(db)
-                    .dropIfExists(temporaryTable)
-                    .end();
-        } catch (SQLiteException e) {
-            Timber.i(e);
-            success = false;
-        }
-        return success;
+        createInstancesTableV5(db, temporaryTableName);
+        dropObsoleteColumns(db, COLUMN_NAMES_V5, temporaryTableName);
     }
 
-    private void createInstancesTable(SQLiteDatabase db) {
-        db.execSQL("CREATE TABLE IF NOT EXISTS " + INSTANCES_TABLE_NAME + " ("
+    /**
+     * Use the existing temporary table with the provided name to only keep the given relevant
+     * columns, dropping all others.
+     *
+     * NOTE: the temporary table with the name provided is dropped.
+     *
+     * The move and copy strategy is used to overcome the fact that SQLITE does not directly support
+     * removing a column. See https://sqlite.org/lang_altertable.html
+     *
+     * @param db                    the database to operate on
+     * @param relevantColumns       the columns relevant to the current version
+     * @param temporaryTableName    the name of the temporary table to use and then drop
+     */
+    private void dropObsoleteColumns(SQLiteDatabase db, String[] relevantColumns, String temporaryTableName) {
+        List<String> columns = SQLiteUtils.getColumnNames(db, INSTANCES_TABLE_NAME);
+        columns.retainAll(Arrays.asList(relevantColumns));
+        String[] columnsToKeep = columns.toArray(new String[0]);
+
+        SQLiteUtils.copyRows(db, INSTANCES_TABLE_NAME, columnsToKeep, temporaryTableName);
+        SQLiteUtils.dropTable(db, INSTANCES_TABLE_NAME);
+        SQLiteUtils.renameTable(db, temporaryTableName, INSTANCES_TABLE_NAME);
+    }
+
+    private void upgradeToVersion6(SQLiteDatabase db, String name) {
+        SQLiteUtils.addColumn(db, name, GEOMETRY, "text");
+        SQLiteUtils.addColumn(db, name, GEOMETRY_TYPE, "text");
+    }
+
+    private void createInstancesTableV5(SQLiteDatabase db, String name) {
+        db.execSQL("CREATE TABLE IF NOT EXISTS " + name + " ("
                 + _ID + " integer primary key, "
                 + DISPLAY_NAME + " text not null, "
                 + SUBMISSION_URI + " text, "
@@ -198,7 +211,26 @@ public class InstancesDatabaseHelper extends SQLiteOpenHelper {
                 + JR_VERSION + " text, "
                 + STATUS + " text not null, "
                 + LAST_STATUS_CHANGE_DATE + " date not null, "
-                + DISPLAY_SUBTEXT + " text not null,"
                 + DELETED_DATE + " date );");
+    }
+
+    public static void databaseMigrationStarted() {
+        isDatabaseBeingMigrated = true;
+    }
+
+    public static boolean isDatabaseBeingMigrated() {
+        return isDatabaseBeingMigrated;
+    }
+
+    public static boolean databaseNeedsUpgrade() {
+        boolean isDatabaseHelperOutOfDate = false;
+        try {
+            SQLiteDatabase db = SQLiteDatabase.openDatabase(InstancesDatabaseHelper.getDatabasePath(), null, SQLiteDatabase.OPEN_READONLY);
+            isDatabaseHelperOutOfDate = InstancesDatabaseHelper.DATABASE_VERSION != db.getVersion();
+            db.close();
+        } catch (SQLException e) {
+            Timber.i(e);
+        }
+        return isDatabaseHelperOutOfDate;
     }
 }

@@ -14,30 +14,27 @@
 
 package org.odk.collect.android.activities;
 
-import android.app.AlertDialog;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.view.Window;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ImageButton;
-import android.widget.RadioGroup;
-import android.widget.Spinner;
 import android.widget.TextView;
 
 import androidx.annotation.VisibleForTesting;
+import androidx.appcompat.app.AlertDialog;
 
 import org.odk.collect.android.R;
-import org.odk.collect.android.map.GoogleMapFragment;
-import org.odk.collect.android.map.MapFragment;
-import org.odk.collect.android.map.MapPoint;
-import org.odk.collect.android.map.MapboxMapFragment;
-import org.odk.collect.android.map.OsmMapFragment;
-import org.odk.collect.android.spatial.MapHelper;
+import org.odk.collect.android.geo.MapFragment;
+import org.odk.collect.android.geo.MapPoint;
+import org.odk.collect.android.geo.MapProvider;
+import org.odk.collect.android.geo.SettingsDialogFragment;
+import org.odk.collect.android.injection.DaggerUtils;
+import org.odk.collect.android.preferences.MapsPreferences;
+import org.odk.collect.android.utilities.DialogUtils;
 import org.odk.collect.android.utilities.ToastUtils;
-import org.osmdroid.tileprovider.IRegisterReceiver;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,12 +44,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-import androidx.annotation.VisibleForTesting;
+import javax.inject.Inject;
 
-import static org.odk.collect.android.utilities.PermissionUtils.areLocationPermissionsGranted;
-
-public class GeoPolyActivity extends BaseGeoMapActivity implements IRegisterReceiver {
-
+public class GeoPolyActivity extends BaseGeoMapActivity implements SettingsDialogFragment.SettingsDialogCallback {
     public static final String ANSWER_KEY = "answer";
     public static final String OUTPUT_MODE_KEY = "output_mode";
     public static final String MAP_CENTER_KEY = "map_center";
@@ -70,6 +64,9 @@ public class GeoPolyActivity extends BaseGeoMapActivity implements IRegisterRece
     private ScheduledFuture schedulerHandler;
 
     private OutputMode outputMode;
+
+    @Inject
+    MapProvider mapProvider;
     private MapFragment map;
     private int featureId = -1;  // will be a positive featureId once map is ready
     private String originalAnswerString = "";
@@ -84,7 +81,6 @@ public class GeoPolyActivity extends BaseGeoMapActivity implements IRegisterRece
     private TextView locationStatus;
     private TextView collectionStatus;
 
-    private AlertDialog settingsDialog;
     private View settingsView;
 
     private static final int[] INTERVAL_OPTIONS = {
@@ -100,11 +96,9 @@ public class GeoPolyActivity extends BaseGeoMapActivity implements IRegisterRece
     private boolean inputActive; // whether we are ready for the user to add points
     private boolean recordingEnabled; // whether points are taken from GPS readings (if not, placed by tapping)
     private boolean recordingAutomatic; // whether GPS readings are taken at regular intervals (if not, only when user-directed)
-    private RadioGroup radioGroup;
-    private View autoOptions;
-    private Spinner autoInterval;
+
     private int intervalIndex = DEFAULT_INTERVAL_INDEX;
-    private Spinner accuracyThreshold;
+
     private int accuracyThresholdIndex = DEFAULT_ACCURACY_THRESHOLD_INDEX;
 
     // restored from savedInstanceState
@@ -114,6 +108,8 @@ public class GeoPolyActivity extends BaseGeoMapActivity implements IRegisterRece
 
     @Override public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        DaggerUtils.getComponent(this).inject(this);
+
         if (savedInstanceState != null) {
             restoredMapCenter = savedInstanceState.getParcelable(MAP_CENTER_KEY);
             restoredMapZoom = savedInstanceState.getDouble(MAP_ZOOM_KEY);
@@ -126,40 +122,16 @@ public class GeoPolyActivity extends BaseGeoMapActivity implements IRegisterRece
                 ACCURACY_THRESHOLD_INDEX_KEY, DEFAULT_ACCURACY_THRESHOLD_INDEX);
         }
 
-        if (!areLocationPermissionsGranted(this)) {
-            finish();
-            return;
-        }
-
         outputMode = (OutputMode) getIntent().getSerializableExtra(OUTPUT_MODE_KEY);
 
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         setTitle(getString(outputMode == OutputMode.GEOTRACE ?
             R.string.geotrace_title : R.string.geoshape_title));
         setContentView(R.layout.geopoly_layout);
-        createMapFragment().addTo(this, R.id.map_container, this::initMap);
-    }
 
-    @Override protected void onStart() {
-        super.onStart();
-        // initMap() is called asynchronously, so map might not be initialized yet.
-        if (map != null) {
-            map.setGpsLocationEnabled(true);
-        }
-    }
-
-    @Override protected void onStop() {
-        // To avoid a memory leak, we have to shut down GPS when the activity
-        // quits for good. But if it's only a screen rotation, we don't want to
-        // stop/start GPS and make the user wait to get a GPS lock again.
-        if (!isChangingConfigurations()) {
-            // initMap() is called asynchronously, so map can be null if the activity
-            // is stopped (e.g. by screen rotation) before initMap() gets to run.
-            if (map != null) {
-                map.setGpsLocationEnabled(false);
-            }
-        }
-        super.onStop();
+        Context context = getApplicationContext();
+        mapProvider.createMapFragment(context)
+            .addTo(this, R.id.map_container, this::initMap, this::finish);
     }
 
     @Override protected void onSaveInstanceState(Bundle state) {
@@ -190,67 +162,12 @@ public class GeoPolyActivity extends BaseGeoMapActivity implements IRegisterRece
         super.onDestroy();
     }
 
-    @Override public void destroy() { }
-
     public void initMap(MapFragment newMapFragment) {
-        if (newMapFragment == null) {  // could not create the map
-            finish();
-            return;
-        }
-        if (newMapFragment.getFragment().getActivity() == null) {
-            // If the screen is rotated just after the activity starts but
-            // before initMap() is called, then when the activity is re-created
-            // in the new orientation, initMap() can sometimes be called on the
-            // old, dead Fragment that used to be attached to the old activity.
-            // Touching the dead Fragment will cause a crash; discard it.
-            return;
-        }
-
         map = newMapFragment;
-        if (map instanceof GoogleMapFragment) {
-            helper = new MapHelper(this, ((GoogleMapFragment) map).getGoogleMap(), selectedLayer);
-        } else if (map instanceof MapboxMapFragment) {
-            helper = new MapHelper(this);
-        } else if (map instanceof OsmMapFragment) {
-            helper = new MapHelper(this, ((OsmMapFragment) map).getMapView(), this, selectedLayer);
-        }
-        helper.setBasemap();
 
         locationStatus = findViewById(R.id.location_status);
         collectionStatus = findViewById(R.id.collection_status);
         settingsView = getLayoutInflater().inflate(R.layout.geopoly_dialog, null);
-        radioGroup = settingsView.findViewById(R.id.radio_group);
-        radioGroup.setOnCheckedChangeListener(this::updateRecordingMode);
-        autoOptions = settingsView.findViewById(R.id.auto_options);
-        autoInterval = settingsView.findViewById(R.id.auto_interval);
-        autoInterval.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                intervalIndex = position;
-            }
-
-            @Override public void onNothingSelected(AdapterView<?> parent) { }
-        });
-
-        String[] options = new String[INTERVAL_OPTIONS.length];
-        for (int i = 0; i < INTERVAL_OPTIONS.length; i++) {
-            options[i] = formatInterval(INTERVAL_OPTIONS[i]);
-        }
-        populateSpinner(autoInterval, options);
-
-        accuracyThreshold = settingsView.findViewById(R.id.accuracy_threshold);
-        accuracyThreshold.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                accuracyThresholdIndex = position;
-            }
-
-            @Override public void onNothingSelected(AdapterView<?> parent) { }
-        });
-
-        options = new String[ACCURACY_THRESHOLD_OPTIONS.length];
-        for (int i = 0; i < ACCURACY_THRESHOLD_OPTIONS.length; i++) {
-            options[i] = formatAccuracyThreshold(ACCURACY_THRESHOLD_OPTIONS[i]);
-        }
-        populateSpinner(accuracyThreshold, options);
 
         clearButton = findViewById(R.id.clear);
         clearButton.setOnClickListener(v -> showClearDialog());
@@ -285,7 +202,7 @@ public class GeoPolyActivity extends BaseGeoMapActivity implements IRegisterRece
         playButton = findViewById(R.id.play);
         playButton.setOnClickListener(v -> {
             if (map.getPolyPoints(featureId).isEmpty()) {
-                settingsDialog.show();
+                DialogUtils.showIfNotShowing(SettingsDialogFragment.class, getSupportFragmentManager());
             } else {
                 startInput();
             }
@@ -294,9 +211,9 @@ public class GeoPolyActivity extends BaseGeoMapActivity implements IRegisterRece
         recordButton = findViewById(R.id.record_button);
         recordButton.setOnClickListener(v -> recordPoint());
 
-        buildDialogs();
-
-        findViewById(R.id.layers).setOnClickListener(v -> helper.showLayersDialog());
+        findViewById(R.id.layers).setOnClickListener(v -> {
+            MapsPreferences.showReferenceLayerDialog(this);
+        });
 
         zoomButton = findViewById(R.id.zoom);
         zoomButton.setOnClickListener(v -> map.zoomToPoint(map.getGpsLocation(), true));
@@ -361,34 +278,11 @@ public class GeoPolyActivity extends BaseGeoMapActivity implements IRegisterRece
     }
 
     @Override public void onBackPressed() {
-        if (!formatPoints(map.getPolyPoints(featureId)).equals(originalAnswerString)) {
+        if (map != null && !formatPoints(map.getPolyPoints(featureId)).equals(originalAnswerString)) {
             showBackDialog();
         } else {
             finish();
         }
-    }
-
-    /** Populates a Spinner with the option labels in the given array. */
-    private void populateSpinner(Spinner spinner, String[] options) {
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(
-            this, android.R.layout.simple_spinner_item, options);
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinner.setAdapter(adapter);
-    }
-
-    /** Formats a time interval as a whole number of seconds or minutes. */
-    private String formatInterval(int seconds) {
-        int minutes = seconds / 60;
-        return minutes > 0 ?
-            getResources().getQuantityString(R.plurals.number_of_minutes, minutes, minutes) :
-            getResources().getQuantityString(R.plurals.number_of_seconds, seconds, seconds);
-    }
-
-    /** Formats an entry in the accuracy threshold dropdown. */
-    private String formatAccuracyThreshold(int meters) {
-        return meters > 0 ?
-            getResources().getQuantityString(R.plurals.number_of_meters, meters, meters) :
-            getString(R.string.none);
     }
 
     /**
@@ -450,23 +344,8 @@ public class GeoPolyActivity extends BaseGeoMapActivity implements IRegisterRece
         return result.toString().trim();
     }
 
-    private void buildDialogs() {
-        settingsDialog = new AlertDialog.Builder(this)
-            .setTitle(getString(R.string.input_method))
-            .setView(settingsView)
-            .setPositiveButton(getString(R.string.start), (dialog, id) -> {
-                startInput();
-                dialog.cancel();
-                settingsDialog.dismiss();
-            })
-            .setNegativeButton(R.string.cancel, (dialog, id) -> {
-                dialog.cancel();
-                settingsDialog.dismiss();
-            })
-            .create();
-    }
-
-    private void startInput() {
+    @Override
+    public void startInput() {
         inputActive = true;
         if (recordingEnabled && recordingAutomatic) {
             startScheduler(INTERVAL_OPTIONS[intervalIndex]);
@@ -474,10 +353,39 @@ public class GeoPolyActivity extends BaseGeoMapActivity implements IRegisterRece
         updateUi();
     }
 
-    public void updateRecordingMode(RadioGroup group, int id) {
+    @Override
+    public void updateRecordingMode(int id) {
         recordingEnabled = id != R.id.placement_mode;
         recordingAutomatic = id == R.id.automatic_mode;
-        updateUi();
+    }
+
+    @Override
+    public int getCheckedId() {
+        if (recordingEnabled) {
+            return recordingAutomatic ? R.id.automatic_mode : R.id.manual_mode;
+        } else {
+            return R.id.placement_mode;
+        }
+    }
+
+    @Override
+    public int getIntervalIndex() {
+        return intervalIndex;
+    }
+
+    @Override
+    public int getAccuracyThresholdIndex() {
+        return accuracyThresholdIndex;
+    }
+
+    @Override
+    public void setIntervalIndex(int intervalIndex) {
+        this.intervalIndex = intervalIndex;
+    }
+
+    @Override
+    public void setAccuracyThresholdIndex(int accuracyThresholdIndex) {
+        this.accuracyThresholdIndex = accuracyThresholdIndex;
     }
 
     public void startScheduler(int intervalSeconds) {
@@ -536,7 +444,7 @@ public class GeoPolyActivity extends BaseGeoMapActivity implements IRegisterRece
 
     private void clear() {
         map.clearFeatures();
-        featureId = map.addDraggablePoly(new ArrayList<>(), false);
+        featureId = map.addDraggablePoly(new ArrayList<>(), outputMode == OutputMode.GEOSHAPE);
         inputActive = false;
         updateUi();
     }
@@ -549,7 +457,7 @@ public class GeoPolyActivity extends BaseGeoMapActivity implements IRegisterRece
         // Visibility state
         playButton.setVisibility(inputActive ? View.GONE : View.VISIBLE);
         pauseButton.setVisibility(inputActive ? View.VISIBLE : View.GONE);
-        recordButton.setVisibility(inputActive && recordingEnabled ? View.VISIBLE : View.GONE);
+        recordButton.setVisibility(inputActive && recordingEnabled && !recordingAutomatic ? View.VISIBLE : View.GONE);
 
         // Enabled state
         zoomButton.setEnabled(location != null);
@@ -559,14 +467,6 @@ public class GeoPolyActivity extends BaseGeoMapActivity implements IRegisterRece
         settingsView.findViewById(R.id.automatic_mode).setEnabled(location != null);
 
         // Settings dialog
-        if (recordingEnabled) {
-            radioGroup.check(recordingAutomatic ? R.id.automatic_mode : R.id.manual_mode);
-        } else {
-            radioGroup.check(R.id.placement_mode);
-        }
-        autoOptions.setVisibility(recordingEnabled && recordingAutomatic ? View.VISIBLE : View.GONE);
-        autoInterval.setSelection(intervalIndex);
-        accuracyThreshold.setSelection(accuracyThresholdIndex);
 
         // GPS status
         boolean usingThreshold = isAccuracyThresholdActive();

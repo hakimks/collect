@@ -14,35 +14,38 @@
 
 package org.odk.collect.android.preferences;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.preference.PreferenceManager;
+
 import androidx.annotation.Nullable;
 
 import org.odk.collect.android.application.Collect;
-import org.odk.collect.android.tasks.ServerPollingJob;
+import org.odk.collect.android.injection.DaggerUtils;
 
 import java.util.Map;
 import java.util.Set;
 
 import timber.log.Timber;
 
-import static org.odk.collect.android.preferences.GeneralKeys.GENERAL_KEYS;
-import static org.odk.collect.android.preferences.GeneralKeys.KEY_PERIODIC_FORM_UPDATES_CHECK;
+import static org.odk.collect.android.preferences.GeneralKeys.DEFAULTS;
 
 public class GeneralSharedPreferences {
 
-    private static GeneralSharedPreferences instance;
     private final android.content.SharedPreferences sharedPreferences;
 
-    private GeneralSharedPreferences() {
-        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(Collect.getInstance());
+    public GeneralSharedPreferences(Context context) {
+        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
     }
 
+    /**
+     * Shouldn't use a static helper to inject instance into objects. Either use constructor
+     * injection or Dagger if needed.
+     */
+    @Deprecated
     public static synchronized GeneralSharedPreferences getInstance() {
-        if (instance == null) {
-            instance = new GeneralSharedPreferences();
-        }
-        return instance;
+        return DaggerUtils.getComponent(Collect.getInstance()).generalSharedPreferences();
     }
 
     public Object get(String key) {
@@ -54,7 +57,7 @@ public class GeneralSharedPreferences {
         Object value = null;
 
         try {
-            defaultValue = GENERAL_KEYS.get(key);
+            defaultValue = DEFAULTS.get(key);
         } catch (Exception e) {
             Timber.e("Default for %s not found", key);
         }
@@ -75,7 +78,7 @@ public class GeneralSharedPreferences {
     }
 
     public void reset(String key) {
-        Object defaultValue = GENERAL_KEYS.get(key);
+        Object defaultValue = DEFAULTS.get(key);
         save(key, defaultValue);
     }
 
@@ -83,9 +86,6 @@ public class GeneralSharedPreferences {
         Editor editor = sharedPreferences.edit();
 
         if (value == null || value instanceof String) {
-            if (key.equals(KEY_PERIODIC_FORM_UPDATES_CHECK) && get(KEY_PERIODIC_FORM_UPDATES_CHECK) != value) {
-                ServerPollingJob.schedulePeriodicJob((String) value);
-            }
             editor.putString(key, (String) value);
         } else if (value instanceof Boolean) {
             editor.putBoolean(key, (Boolean) value);
@@ -110,10 +110,7 @@ public class GeneralSharedPreferences {
 
     public void clear() {
         for (Map.Entry<String, ?> prefs : getAll().entrySet()) {
-            String key = prefs.getKey();
-            if (!GeneralKeys.KEYS_WE_SHOULD_NOT_RESET.contains(key)) {
-                reset(key);
-            }
+            reset(prefs.getKey());
         }
     }
 
@@ -127,13 +124,17 @@ public class GeneralSharedPreferences {
     }
 
     public void reloadPreferences() {
-        for (Map.Entry<String, Object> keyValuePair : GeneralKeys.GENERAL_KEYS.entrySet()) {
+        for (Map.Entry<String, Object> keyValuePair : GeneralKeys.DEFAULTS.entrySet()) {
             save(keyValuePair.getKey(), get(keyValuePair.getKey()));
         }
     }
 
     public static boolean isAutoSendEnabled() {
         return !getInstance().get(GeneralKeys.KEY_AUTOSEND).equals("off");
+    }
+
+    public SharedPreferences getSharedPreferences() {
+        return sharedPreferences;
     }
 
     public static class ValidationException extends RuntimeException {

@@ -18,13 +18,14 @@ package org.odk.collect.android.widgets;
 
 import android.content.Context;
 
-import org.javarosa.core.model.QuestionDef;
 import org.javarosa.core.model.SelectChoice;
-import org.javarosa.form.api.FormEntryPrompt;
 import org.javarosa.xpath.expr.XPathFuncExpr;
-import org.odk.collect.android.exception.ExternalDataException;
+import org.odk.collect.android.R;
 import org.odk.collect.android.external.ExternalDataUtil;
+import org.odk.collect.android.formentry.questions.QuestionDetails;
 
+import java.io.FileNotFoundException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -33,9 +34,10 @@ import java.util.List;
  * like: SelectOne, SelectMultiple, Ranking.
  */
 public abstract class ItemsWidget extends QuestionWidget {
-    List<SelectChoice> items;
 
-    public ItemsWidget(Context context, FormEntryPrompt prompt) {
+    List<SelectChoice> items = new ArrayList<>();
+
+    public ItemsWidget(Context context, QuestionDetails prompt) {
         super(context, prompt);
         readItems();
     }
@@ -43,28 +45,14 @@ public abstract class ItemsWidget extends QuestionWidget {
     protected void readItems() {
         // SurveyCTO-added support for dynamic select content (from .csv files)
         XPathFuncExpr xpathFuncExpr = ExternalDataUtil.getSearchXPathExpression(getFormEntryPrompt().getAppearanceHint());
-        if (readExternalChoices(xpathFuncExpr)) {
+        if (xpathFuncExpr != null) {
             try {
                 items = ExternalDataUtil.populateExternalChoices(getFormEntryPrompt(), xpathFuncExpr);
-                addExternalChoices(items);
-            } catch (ExternalDataException e) {
-                items = getFormEntryPrompt().getSelectChoices();
+            } catch (FileNotFoundException e) {
+                showWarning(getContext().getString(R.string.file_missing, e.getMessage()));
             }
         } else {
             items = getFormEntryPrompt().getSelectChoices();
-        }
-    }
-
-    private boolean readExternalChoices(XPathFuncExpr xpathFuncExpr) {
-        return xpathFuncExpr != null && getFormEntryPrompt().getQuestion().getNumChoices() == 1;
-    }
-
-    private void addExternalChoices(List<SelectChoice> choices) {
-        QuestionDef questionDef = getFormEntryPrompt().getQuestion();
-        // The first choice in this case is just for providing headers which we need to read external items
-        questionDef.removeSelectChoice(questionDef.getChoice(0));
-        for (SelectChoice choice : choices) {
-            questionDef.addSelectChoice(choice);
         }
     }
 }

@@ -7,13 +7,10 @@
   <string name="signature_capture">Firma</string>
   <string name="view_video">Mostra Video</string>
   <string name="choose_audio">Seleziona Audio</string>
-  <string name="add_another">Aggiungi gruppo</string>
+  <!--This sentence is used in the dialog for adding repeats and will be completed by a singular noun usually. Examples would be ‘Add “observation”?’ or ‘Add “Reading”?’. If the phrase doesn’t make sense in your language you can add a word like “new”, being careful of gender/plural.-->
+  <string name="add_repeat">Aggiungere</string>
+  <string name="dont_add_repeat">Non aggiungere</string>
   <string name="add_another_menu">Aggiungi un altro</string>
-  <string name="add_another_repeat">Aggiungere un altro \"%s\" gruppo?</string>
-  <string name="add_repeat">Aggiungere un nuovo \"%s\" gruppo ?</string>
-  <string name="add_repeat_no">Non aggiungere</string>
-  <string name="audio_file_error">Nessun file audio è stato specificato.</string>
-  <string name="audio_file_invalid">File: %s non è un file di audio valido.</string>
   <string name="cancel">Annulla</string>
   <string name="cancel_loading_form">Annulla</string>
   <string name="cancel_location">Annulla</string>
@@ -53,8 +50,6 @@
   <string name="do_not_change">Annulla</string>
   <string name="do_not_exit">Annulla</string>
   <string name="do_not_save">Ignorare i cambiamenti</string>
-  <string name="entering_repeat">Aggiungi gruppo</string>
-  <string name="entering_repeat_ask">Aggiungere un nuovo gruppo ?</string>
   <string name="enter_data">Compila Modulo Vuoto</string>
   <string name="enter_data_button">Compila Modulo Vuoto</string>
   <string name="error_occured">Si è verificato un errore.</string>
@@ -78,15 +73,9 @@
   <string name="jump_to_beginning">Vai all\'inizio</string>
   <string name="jump_to_end">Vai alla fine</string>
   <string name="jump_to_previous">Vai al livello superiore</string>
-  <string name="leave_repeat_yes">Non aggiungere</string>
-  <string name="leaving_repeat_ask">Aggiungere un altro gruppo?</string>
-  <string name="list_failed_with_error">Errore visualizzazione Elenco Moduli %s.</string>
-  <string name="loading_form">Caricamento Modulo</string>
+    <string name="loading_form">Caricamento Modulo</string>
   <string name="load_remote_form_error">Errore nel recupero Elenco Moduli.</string>
-  <string name="location_provider_accuracy">Utilizzando %1$s. Precisione%2$s m.</string>
-  <string name="location_accuracy">Precisione: %1$s m</string>
-  <string name="main_menu">Menu principale</string>
-  <string name="main_menu_details">Raccogliere dati non è mai stato così facile!</string>
+    <string name="location_accuracy">Precisione: %1$s m</string>
   <string name="manage_files">Elimina Modulo Salvato</string>
   <string name="mark_finished">Segna Modulo come Completato</string>
   <string name="noselect_error">Spiacenti, non hai selezionato alcun modulo!</string>
@@ -97,9 +86,6 @@
   <string name="no_items_display_instances">Nessuna visualizzazione disponibile.\n\nCerca di completare i moduli salvati prima dell\'invio.</string>
   <string name="ok">OK</string>
   <string name="parse_error">Spiacenti, non sono in grado di analizzare il modulo.</string>
-  <string name="parse_legacy_formlist_failed">Il server non ha fornito un modulo compatibile con Aggregate 0.9.x. : %s </string>
-  <string name="parse_openrosa_formlist_failed">Il server non ha fornito un modulo compatibile con OpenRosa version 1.0 standard: %s
-</string>
   <string name="password">Password</string>
   <string name="play_video">Riproduci Video</string>
   <string name="please_wait">Si prega di attendere qualche istante.</string>
@@ -120,8 +106,6 @@
   <string name="send_data">Invia Modulo Completato</string>
   <string name="send_data_button">Invia Modulo Completato (%s)</string>
   <string name="send_selected_data">Invia selezionato</string>
-  <string name="send_selected_data_internet">Invia (Internet)</string>
-  <string name="send_selected_data_sms">Invia (SMS)</string>
   <string name="view_sent_forms">Visualizza modulo inviato</string>
   <string name="view_sent_forms_button">Visualizza modulo inviato (%s)</string>
   <string name="server_auth_credentials">Nome utente o password del server non validi: %s</string>
@@ -143,19 +127,12 @@
   <string name="change_splash_path">Cambiare immagine</string>
   <string name="keep_changes">Salva le modifiche</string>
   <string name="change_formlist_url">Percorso Elenco Moduli (allegato alla URL del server)</string>
-  <string name="change_protocol">Piattaforma server</string>
-  <string name="change_submission_url">Luogo di consegna (appended to Server URL)</string>
+    <string name="change_submission_url">Luogo di consegna (appended to Server URL)</string>
   <string name="formlist_url">Percorso Elenco Moduli</string>
   <string name="submission_url">Luogo di consegna</string>
   <string name="font_size">Dimensione dei caratteri del testo</string>
   <string name="change_font_size">Dimensione dei caratteri del testo</string>
-  <string name="access_error">Errore durante l\'accesso %s: </string>
-  <string name="manifest_server_error">La risposta del \'Manifest\' non si riferisce a una versione OpenRosa — server sbagliato?</string>
-  <string name="root_element_error">Elemento principale non è &amp;lt;manifest\&gt; — era %s</string>
-  <string name="root_namespace_error">Il \'Namespace\' dell\'Elemento Root del documento XML non è corretto: %s</string>
-  <string name="manifest_tag_error">Il \'Manifest\' %s del documento XML manca di una o più \'tag\': filename, hash, or downloadUrl</string>
   <string name="form_download_progress">%1$s. Caricamento file multimediali: %2$s di %3$s</string>
-  <string name="file_fetch_failed">Errore: %2$s (%3$s) su %1$s</string>
   <string name="fetching_manifest">%s. Ottenendo \'Manifest\' da XML</string>
   <string name="success">Successo</string>
   <string name="failures">Errori</string>
@@ -172,9 +149,7 @@
   <string name="save_as_error">Il nome Salvato non deve essere vuoto!</string>
   <string name="edit_prompt">Modifica Prompt</string>
   <string name="selected_google_account_text">Account Google</string>
-  <string name="server_platform_odk_aggregate">ODK Aggregate</string>
-  <string name="server_platform_other">Altro</string>
-  <string name="font_size_extra_large">Molto Grande</string>
+    <string name="font_size_extra_large">Molto Grande</string>
   <string name="font_size_large">Grande</string>
   <string name="font_size_medium">Media</string>
   <string name="font_size_small">Piccolo</string>
@@ -193,6 +168,7 @@
   <string name="sending_failed_on_date_at_time">\'Invio fallito il\' EEE, MMM dd, yyyy \'alle\' HH:mm</string>
   <!--http://docs.oracle.com/javase/6/docs/api/java/text/SimpleDateFormat.html-->
   <string name="deleted_on_date_at_time">\'Cancellato il\' EEE, MMM dd, yyyy \'alle\' HH:mm</string>
+  <string name="submission_deleted">Record inviato cancellato</string>
   <string name="version">Versione:</string>
   <string name="parent_form_not_present">Impossibile modificare questo modulo salvato perché il corrispondente modulo vuoto non esiste o è stato cancellato.\n\nModulo: %1$s</string>
   <string name="launch_app">Invio</string>
@@ -218,8 +194,8 @@
   <string name="autosend">Invio automatico</string>
   <string name="found_in_main">Deseleziona per nascondere dal Menu Principale</string>
   <string name="found_in_settings">Deseleziona per nascondere da Impostazioni Generali</string>
-  <string name="save_preferences">Salvataggio Impostazioni su Disco</string>
   <string name="form_forward">Prossimo</string>
+  <string name="form_backward">Indietro</string>
   <string name="navigation">Navigazione</string>
   <string name="swipe_navigation">Scorri il dito orizzontalmente</string>
   <string name="buttons_navigation">Usa pulsanti avanti/indietro</string>
@@ -272,13 +248,7 @@
   <string name="go_drive">My Drive</string>
   <string name="go_shared">Condiviso con Me</string>
   <string name="modified_on_date_at_time">\'Modificato il\' EEE, dd MMM yyyy \'alle\' HH:mm</string>
-  <string name="aggregate_preferences">Impostazioni ODK Aggregate</string>
-  <string name="sms_submission_preferences">Parametri sottomissione SMS</string>
-  <string name="submission_transport">Modalità Sottomissione (avanzata)</string>
-  <string name="submission_transport_types_title">Manda sottomissione con</string>
-  <string name="other_preferences">Altre impostazioni piattaforma</string>
-  <string name="google_preferences">Impostazioni di Google Sheets</string>
-  <string name="google_sheets_url_hint">I moduli devono avere un URL di destinazione. Se non ne viene specificato uno, sarà utilizzato il seguente URL.</string>
+    <string name="google_sheets_url_hint">I moduli devono avere un URL di destinazione. Se non ne viene specificato uno, sarà utilizzato il seguente URL.</string>
   <string name="drive_get_file">Caricamento %1$s e media files.</string>
   <string name="no_google_account">Nessun Account Google selezionato!</string>
   <string name="google_set_account">Hai selezionato Google Sheets come tuo server. Perpiacere seleziona un corrispondente account Google nelle Impostazioni Generali prima di procedere.</string>
@@ -306,25 +276,29 @@
   <string name="leave_a_review">Lascia un commento su Play Store</string>
   <string name="leave_a_review_msg">Il tuo commento (speriamo positivo) aumenta la visibilità dell\'applicazione su Play Store</string>
   <!--Geo string added in feature-geofeatures branch-->
-  <string name="map_preferences">Mappatura</string>
-  <string name="map_sdk_selector_title">Mappatura SDK</string>
-  <string name="map_sdk_behavior">Mappatura SDK</string>
-  <string name="google_maps_sdk">Google Maps SDK</string>
-  <string name="openstreetmap_sdk">SDK OpenStreetMap</string>
-  <string name="show_map_sdk">Mostra Opzioni per mappa SDK</string>
-  <string name="openmap_streets">Strade OSM</string>
+  <string name="maps">Mappe</string>
+  <!--TODO(ping): Delete these openmap_* strings when we're ready to move on from OSMDroid.
+      These strings are only being used to preserve compatibility with pre-existing
+       tile caches, and are not shown in the UI.-->
   <string name="openmap_usgs_topo">Mappa Topologia Nazionale USGS</string>
   <string name="openmap_usgs_sat">Mappa Ibrida Nazionale USGS</string>
   <string name="openmap_usgs_img">Immagini di Mappe Nazionali USGS</string>
   <string name="openmap_stamen_terrain">Stamen Terrain</string>
   <string name="openmap_cartodb_positron">CartoDB Positron</string>
   <string name="openmap_cartodb_darkmatter">CartoDB Dark Matter</string>
+  <string name="basemap">Mappa Base</string>
+  <string name="basemap_source">Origine</string>
+  <string name="map_style_label">%sstile mappa</string>
   <string name="streets">Streets - Stradale</string>
   <string name="terrain">Terrain - Territoriale</string>
   <string name="hybrid">Hybrid - Ibrida</string>
   <string name="satellite">Satellite - Satellitare</string>
-  <string name="map_basemap_selector_title">Mappe base</string>
-  <string name="show_map_basemap">Mostra opzioni mappa base</string>
+  <string name="light">Chiaro</string>
+  <string name="dark">Scuro</string>
+  <string name="outdoors">All\'aperto</string>
+  <string name="topographic">Topografico</string>
+  <string name="carto_map_style_positron">Posizione</string>
+  <string name="reference_layer">Livello di riferimento</string>
   <string name="save_point">Salva Geo-punto</string>
   <string name="get_point">Inizia Geo-punto</string>
   <string name="geopoint_view_read_only">Guarda Geo-punto</string>
@@ -335,9 +309,8 @@
   <string name="start">Inizia</string>
   <string name="enable_gps">Abilita GPS</string>
   <string name="geotrace_title">Geo-tracciatura</string>
-    <string name="gps_enable_message">Il GPS è disabilitato nel tuo dispositivo. Vuoi abilitarlo?</string>
-  <string name="select_offline_layer">Seleziona Layer Offline</string>
-    <string name="geo_clear_warning">Caratteristica già creata. Vuoi cancellarla?</string>
+  <string name="gps_enable_message">Il GPS è disabilitato sul tuo dispositivo. Vuoi abilitarlo?</string>
+  <string name="geo_clear_warning">Caratteristica già creata. Vuoi cancellarla?</string>
   <string name="geo_exit_warning">Vuoi scartare le modifiche e ritornare ad ODK?</string>
   <string name="polygon_validator">Devi avere almeno 3 punti per creare un Poligono</string>
   <string name="polyline_validator">Devi avere almeno 2 punti per creare una Polilinea</string>
@@ -346,12 +319,23 @@
   <string name="manual_mode">Memorizzazione manuale localizzazione</string>
   <string name="automatic_mode">Memorizzazione automatica localizzazione</string>
   <string name="recording_interval">Memorizzazione intervallo:</string>
+  <plurals name="number_of_seconds">
+    <item quantity="one">%d</item>
+    <item quantity="other">%dsecondi</item>
+  </plurals>
+  <plurals name="number_of_minutes">
+    <item quantity="one">%dminuti</item>
+    <item quantity="other">%dminuti</item>
+  </plurals>
   <string name="accuracy_requirement">Requisiti di precisione:</string>
   <string name="none">Nessuno</string>
+  <plurals name="number_of_meters">
+    <item quantity="one">%dmetri</item>
+    <item quantity="other">%d metri</item>
+  </plurals>
   <string name="location_status_searching">Sto ricercando segnale GPS, prego attendere…</string>
-  <string name="location_status_accuracy">Precisione localizzazione GPS: %.1f m</string>
-  <string name="location_status_acceptable">Precisione localizzazione GPS: %.1f m (accettabile)</string>
-  <string name="location_status_unacceptable">Precisione localizzazione GPS: %.1f m (non accettabile)</string>
+  <string name="location_status_accuracy">Precisione della localizzazione GPS%.2f m</string>
+  <string name="location_status_acceptable">Precisione localizzazione GPS: %.2fm (accettabile)</string>
   <string name="collection_status_paused">Punti inseriti: %d</string>
   <string name="collection_status_placement">Punti inseriti: %d (tocca per inserire punti)</string>
   <string name="collection_status_manual">Punti inseriti: %d (salvataggio manuale)</string>
@@ -461,28 +445,17 @@
   <string name="select_time">Seleziona un orario</string>
   <string name="no_date_selected">Nessuna data selezionata</string>
   <string name="no_time_selected">Nessun orario selezionato</string>
-  <string name="import_settings">Parametri di configurazione per Importare/Esportare</string>
-  <string name="qr_code">Codice QR</string>
-  <string name="scan_qrcode">Scansiona il codice con l\'altro dispositivo</string>
   <string name="successfully_imported_settings">Impostazioni importate con successo</string>
   <string name="encoding_max_limit">Numero massimo di caratteri raggiunto: codice QR non può essere generato per tutte le impostazioni</string>
   <string name="share">Condividi</string>
-  <string name="select_qrcode">Seleziona codice dalla memoria SD - scheda</string>
   <string name="turn_on_flashlight">Accendere il flash</string>
   <string name="turn_off_flashlight">Spegnere il flash</string>
-  <string name="qrcode_with_both_passwords">Questo codice QR include le tue password amministratore e server. Perpiacere trattalo con attenzione. \n(Tocca per rimuovere le passwords)</string>
-  <string name="qrcode_without_passwords">Questo codice QR code non include le tue password amministratore e server. \n(Tocca per aggiungere le passwords)</string>
-  <string name="qrcode_with_admin_password">Questo codice QR code include la tua password amministratore. Perpiacere trattalo con attenzione. \n(Tocca per rimuovere la password)</string>
-  <string name="qrcode_with_server_password">Questo codice QR code include la tua password server. Perpiacere trattalo con attenzione. \n(Tocca per rimuovere la password)</string>
-  <string name="import_export_settings">Parametri Importazione/Esportazione</string>
-  <string name="qrcode_scanner_prompt">Inserire il codice QR dentro il rettangolo</string>
   <string name="barcode_scanner_prompt">Inserire il codice a barre dentro il rettangolo</string>
   <string name="server_password">Password del Server</string>
   <string name="include_password_dialog">Password inclusa nel Codice</string>
   <string name="generate">Genera</string>
   <string name="invalid_qrcode">Il codice QR non contiene parametri validi</string>
-  <string name="share_qrcode">Condividi codice QR</string>
-  <string name="take_picture_instruction">Tocca lo schermo per scattare una foto</string>
+    <string name="take_picture_instruction">Tocca lo schermo per scattare una foto</string>
   <string name="error_front_camera_unavailable">Fotocamera frontale non disponibile in questo dispositivo</string>
   <string name="camera_error">Questo dispositivo non supporta la Camera2 API.</string>
   <string name="invalid_range_widget">Questo widget ha parametri invalidi!</string>
@@ -501,7 +474,6 @@
   <string name="wifi_autosend">Solo WiFi</string>
   <string name="cellular_autosend">Solo cellulare</string>
   <string name="wifi_cellular_autosend">WiFi o cellulare</string>
-  <string name="map_basemap_behavior_title">Mappa Base</string>
   <string name="form_management_preferences">Gestione modulo</string>
   <string name="form_submission_category">Sottomissione modulo</string>
   <string name="form_filling_category">Riempimento modulo</string>
@@ -515,7 +487,6 @@
   <string name="type">Tipo</string>
   <string name="form_entry">Deseleziona per nascondere dal Modulo d\'Entrata</string>
   <string name="use_device_language">Utilizza lingua del dispositivo</string>
-  <string name="not_supported_offline_layer_format">Il file del layer offline selezionato utilizza il formato PBF che non è supportato!</string>
   <string name="invalid_email_address">Indirizzo email invalido!</string>
   <string name="sort_by">Ordina per</string>
   <string name="server">Server</string>
@@ -561,10 +532,12 @@
   <string name="coptic_month_11">Epip</string>
   <string name="coptic_month_12">Mesori</string>
   <string name="coptic_month_13">Pi Kogi Enavot</string>
+  <string name="multiple_media_folders_detected_notification">Più di una cartella media rilevata, si prega di rimuovere una e riprovare</string>
   <string name="islamic_month_1">Muharram</string>
   <string name="islamic_month_2">Safar</string>
   <string name="islamic_month_3">Rabi\' al-awwal</string>
   <string name="islamic_month_4">Rabi\' al-thani</string>
+  <string name="persian_month_4">Tir</string>
   <string name="moving_backwards_title">Sfoglia indietro</string>
   <string name="moving_backwards_disabled_title">Sfoglia indietro disabilitato</string>
   <string name="moving_backwards_enabled_title">Sfoglia indietro abilitato</string>
@@ -576,6 +549,7 @@
   <string name="stop_video_capture_instruction">Registrazione avviata. Per fermare, tocca lo schermo</string>
   <string name="no_columns_to_upload">Nessuna colonna nel file caricato</string>
   <string name="storage_runtime_permission_denied_title">Autorizzazione all\'uso della memoria</string>
+  <string name="storage_runtime_permission_denied_desc">Senza questi permessi Collect non può accedere ai tuoi questionari o salvare le risposte. Riapri la applicazione quando sei pronto ad autorizzarli.</string>
   <string name="location_runtime_permissions_denied_title">Autorizzazione all\'uso dei servizi di localizzazione</string>
   <string name="location_runtime_permissions_denied_desc">Senza queste autorizzazioni Collect non può registrare la tua posizione. Prova di nuovo quando hai autorizzato l\'uso dei servizi di localizzazione</string>
   <string name="camera_runtime_permission_denied_title">Autorizzazione uso fotocamera</string>
@@ -584,18 +558,36 @@
   <string name="record_audio_runtime_permission_denied_desc">Senza questa autorizzazione Collect non può registrare i suoni. Prova di nuovo quando hai autorizzato l\'uso del microfono</string>
   <string name="get_accounts_runtime_permission_denied_title">Autorizzazione uso account</string>
   <string name="get_accounts_runtime_permission_denied_desc">Senza questa autorizzazione Collect non può accedere al tuo account. Prova di nuovo quando hai autorizzato l\'accesso al tuo account</string>
-  <string name="send_sms_runtime_permission_denied_title">Autorizzazione invio SMS</string>
-  <string name="send_sms_runtime_permission_denied_desc">Senza questa autorizzazione Collect non può inviare SMS. Prova di nuovo quando hai autorizzato l\'invio di SMS</string>
+  <string name="read_phone_state_runtime_permission_denied_desc">ODK Collect non effettua chiamate ma necessita di accedere ad alcune propietà del tuo dispositivo quali ad esempio il numero telefonico e l\'Identificativo del dispositivo.</string>
   <string name="form_update_category">Aggiornamento Modulo</string>
-  <string name="never">Mai</string>
+  <string name="periodic_form_updates_check_title">Controllo periodico di aggiornamento questionari</string>
   <string name="every_fifteen_minutes">Ogni 15 minuti</string>
   <string name="every_one_hour">Ogni ora</string>
   <string name="every_six_hours">Ogni 6 ore</string>
   <string name="every_24_hours">Ogni 24 ore</string>
   <string name="form_updates_available">Aggiornamenti Modulo disponibili</string>
   <string name="automatic_download">Download automatico</string>
-  <string name="sms_invalid_phone_number">Numero di telefono non valido!</string>
-  <!--Sms submission-->
-  <string name="transport_type_sms">SMS</string>
-  <string name="rank_items">Ordina gli elementi</string>
+  <string name="automatic_download_summary">Scarica automaticamente i questionari aggiornati</string>
+  <string name="guidance_hint_title">Mostra i chiarimenti per le domande</string>
+  <string name="theme_light">Tema chiaro</string>
+  <string name="theme_dark">Tema scuro</string>
+  <string name="cannot_create_directory">Impossibile creare la cartella: %s</string>
+  <string name="not_a_directory">%sesiste, ma non è una cartella</string>
+  <string name="location_metadata">Satelliti disponibili:%1$d/24\n\nTempo trascorso: %2$s</string>
+  <string name="hide_old_form_versions_setting_title">Nascondi le vecchie versioni dei questionario</string>
+  <string name="hide_old_form_versions_setting_summary">Solo l\'ultima versione apparirà in Compila Formulario Vuoto</string>
+    <string name="rank_items">Ordina gli elementi</string>
+  <string name="missing_google_account_dialog_title">Account Google non specificato</string>
+  <string name="notification_channel_name">Impostazioni Generali</string>
+  <string name="go_to_settings">Vai a impostazioni</string>
+  <string name="track_location">Registra la posizione</string>
+  <string name="open_file">Apri documento</string>
+  <string name="qr_code_not_found">Il codice QR non è stato rilevato nell\'immagine selezionata</string>
+  <string name="identity">Identità</string>
+  <string name="enter_identity_description">Questo form necessita che tu ti dentifichi</string>
+  <string name="close">Chiudere</string>
+  <string name="reason_for_changes">Motivo per la modifica</string>
+  <string name="reason">motivo</string>
+  <string name="save">Salvare</string>
+  <string name="reason_for_changes_description">Devi spiegare il motivo per la modifica di questo form</string>
 </resources>

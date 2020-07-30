@@ -1,6 +1,7 @@
 package org.odk.collect.android.widgets;
 
 import android.content.Intent;
+
 import androidx.annotation.NonNull;
 
 import org.javarosa.core.model.data.StringData;
@@ -9,20 +10,25 @@ import org.junit.Test;
 import org.odk.collect.android.R;
 import org.odk.collect.android.ShadowPlayServicesUtil;
 import org.odk.collect.android.activities.GeoPolyActivity;
-import org.odk.collect.android.widgets.base.BinaryWidgetTest;
+import org.odk.collect.android.formentry.questions.QuestionDetails;
+import org.odk.collect.android.preferences.PrefUtils;
+import org.odk.collect.android.widgets.base.BaseGeoWidgetTest;
+import org.odk.collect.android.widgets.support.FakeWaitingForDataRegistry;
 import org.robolectric.annotation.Config;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import static org.mockito.Mockito.when;
+import static org.odk.collect.android.preferences.GeneralKeys.BASEMAP_SOURCE_OSM;
+import static org.odk.collect.android.preferences.GeneralKeys.KEY_BASEMAP_SOURCE;
 
 /**
  * @author James Knight
  */
 
 @Config(shadows = {ShadowPlayServicesUtil.class})
-public class GeoTraceWidgetTest extends BinaryWidgetTest<GeoTraceWidget, StringData> {
+public class GeoTraceWidgetTest extends BaseGeoWidgetTest<GeoTraceWidget, StringData> {
 
     private List<double[]> initialDoubles;
     private List<double[]> answerDoubles;
@@ -35,7 +41,7 @@ public class GeoTraceWidgetTest extends BinaryWidgetTest<GeoTraceWidget, StringD
     @NonNull
     @Override
     public GeoTraceWidget createWidget() {
-        return new GeoTraceWidget(activity, formEntryPrompt);
+        return new GeoTraceWidget(activity, new QuestionDetails(formEntryPrompt, "formAnalyticsID"), new FakeWaitingForDataRegistry());
     }
 
     @Override
@@ -115,14 +121,13 @@ public class GeoTraceWidgetTest extends BinaryWidgetTest<GeoTraceWidget, StringD
     public void buttonsShouldLaunchCorrectIntents() {
         stubAllRuntimePermissionsGranted(true);
 
+        // The default basemap source is Google, which isn't available during
+        // testing, probably because of GL version incompatibility.
+        // Switching to OSMDroid ensures that the activity will launch.
+        PrefUtils.getSharedPrefs().edit().putString(
+            KEY_BASEMAP_SOURCE, BASEMAP_SOURCE_OSM).commit();
+
         Intent intent = getIntentLaunchedByClick(R.id.simple_button);
         assertComponentEquals(activity, GeoPolyActivity.class, intent);
-    }
-
-    @Test
-    public void buttonsShouldNotLaunchIntentsWhenPermissionsDenied() {
-        stubAllRuntimePermissionsGranted(false);
-
-        assertIntentNotStarted(activity, getIntentLaunchedByClick(R.id.simple_button));
     }
 }

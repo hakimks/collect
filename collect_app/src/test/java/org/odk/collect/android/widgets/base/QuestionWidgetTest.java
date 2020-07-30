@@ -1,6 +1,7 @@
 package org.odk.collect.android.widgets.base;
 
 import android.app.Activity;
+
 import androidx.annotation.NonNull;
 
 import org.javarosa.core.model.FormIndex;
@@ -8,12 +9,12 @@ import org.javarosa.core.model.data.IAnswerData;
 import org.javarosa.core.model.data.StringData;
 import org.junit.Test;
 import org.mockito.Mock;
-import org.odk.collect.android.activities.FormEntryActivity;
 import org.odk.collect.android.application.Collect;
-import org.odk.collect.android.logic.FormController;
+import org.odk.collect.android.javarosawrapper.FormController;
+import org.odk.collect.android.support.RobolectricHelpers;
+import org.odk.collect.android.support.TestScreenContextActivity;
 import org.odk.collect.android.widgets.ItemsetWidgetTest;
 import org.odk.collect.android.widgets.interfaces.Widget;
-import org.robolectric.Robolectric;
 
 import java.util.Random;
 
@@ -27,7 +28,8 @@ public abstract class QuestionWidgetTest<W extends Widget, A extends IAnswerData
         extends WidgetTest {
 
     protected Random random = new Random();
-    protected Activity activity = Robolectric.buildActivity(FormEntryActivity.class).create().get();
+    protected Activity activity = RobolectricHelpers.buildThemedActivity(TestScreenContextActivity.class).get();
+
     private W widget;
     private W actualWidget;
 
@@ -52,7 +54,7 @@ public abstract class QuestionWidgetTest<W extends Widget, A extends IAnswerData
      * <p>
      * This should be used for mutating the {@link org.odk.collect.android.widgets.QuestionWidget}
      */
-    public W getActualWidget() {
+    public W getWidget() {
         if (actualWidget == null) {
             actualWidget = createWidget();
         }
@@ -66,12 +68,17 @@ public abstract class QuestionWidgetTest<W extends Widget, A extends IAnswerData
      * This should be unless we want to mutate {@link org.odk.collect.android.widgets.QuestionWidget}
      * This is because a spy is not the real object and changing it won't have any effect on the real object
      */
-    public W getWidget() {
+    public W getSpyWidget() {
         if (widget == null) {
-            widget = spy(getActualWidget());
+            widget = spy(getWidget());
         }
 
         return widget;
+    }
+
+    public void resetWidget() {
+        actualWidget = null;
+        widget = null;
     }
 
     public void setUp() throws Exception {
@@ -86,7 +93,7 @@ public abstract class QuestionWidgetTest<W extends Widget, A extends IAnswerData
 
     @Test
     public void getAnswerShouldReturnNullIfPromptDoesNotHaveExistingAnswer() {
-        W widget = getWidget();
+        W widget = getSpyWidget();
         assertNull(widget.getAnswer());
     }
 
@@ -99,7 +106,7 @@ public abstract class QuestionWidgetTest<W extends Widget, A extends IAnswerData
             when(formEntryPrompt.getAnswerValue()).thenReturn(answer);
         }
 
-        W widget = getWidget();
+        W widget = getSpyWidget();
         IAnswerData newAnswer = widget.getAnswer();
 
         assertNotNull(newAnswer);

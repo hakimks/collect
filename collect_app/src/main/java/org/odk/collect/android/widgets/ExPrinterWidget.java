@@ -24,10 +24,15 @@ import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import org.javarosa.core.model.data.IAnswerData;
-import org.javarosa.form.api.FormEntryPrompt;
 import org.odk.collect.android.R;
 import org.odk.collect.android.activities.FormEntryActivity;
-import org.odk.collect.android.widgets.interfaces.BinaryWidget;
+import org.odk.collect.android.formentry.questions.QuestionDetails;
+import org.odk.collect.android.formentry.questions.WidgetViewUtils;
+import org.odk.collect.android.widgets.interfaces.BinaryDataReceiver;
+import org.odk.collect.android.widgets.interfaces.ButtonClickListener;
+import org.odk.collect.android.widgets.utilities.WaitingForDataRegistry;
+
+import static org.odk.collect.android.formentry.questions.WidgetViewUtils.createSimpleButton;
 
 /**
  * <p>Use the ODK Sensors framework to print data to a connected printer.</p>
@@ -112,22 +117,24 @@ import org.odk.collect.android.widgets.interfaces.BinaryWidget;
  *
  * @author mitchellsundt@gmail.com
  */
-public class ExPrinterWidget extends QuestionWidget implements BinaryWidget {
+public class ExPrinterWidget extends QuestionWidget implements BinaryDataReceiver, ButtonClickListener {
 
-    private final Button launchIntentButton;
+    final Button launchIntentButton;
+    private final WaitingForDataRegistry waitingForDataRegistry;
 
-    public ExPrinterWidget(Context context, FormEntryPrompt prompt) {
+    public ExPrinterWidget(Context context, QuestionDetails prompt, WaitingForDataRegistry waitingForDataRegistry) {
         super(context, prompt);
+        this.waitingForDataRegistry = waitingForDataRegistry;
 
         String v = getFormEntryPrompt().getSpecialFormQuestionText("buttonText");
         String buttonText = (v != null) ? v : context.getString(R.string.launch_printer);
-        launchIntentButton = getSimpleButton(buttonText);
+        launchIntentButton = createSimpleButton(getContext(), getFormEntryPrompt().isReadOnly(), buttonText, getAnswerFontSize(), this);
 
         // finish complex layout
         LinearLayout printLayout = new LinearLayout(getContext());
         printLayout.setOrientation(LinearLayout.VERTICAL);
         printLayout.addView(launchIntentButton);
-        addAnswerView(printLayout);
+        addAnswerView(printLayout, WidgetViewUtils.getStandardMargin(context));
     }
 
     protected void firePrintingActivity(String intentName) throws ActivityNotFoundException {
@@ -224,10 +231,10 @@ public class ExPrinterWidget extends QuestionWidget implements BinaryWidget {
         String v = getFormEntryPrompt().getSpecialFormQuestionText("noPrinterErrorString");
         errorString = (v != null) ? v : getContext().getString(R.string.no_printer);
         try {
-            waitForData();
+            waitingForDataRegistry.waitForData(getFormEntryPrompt().getIndex());
             firePrintingActivity(intentName);
         } catch (ActivityNotFoundException e) {
-            cancelWaitingForData();
+            waitingForDataRegistry.cancelWaitingForData();
             Toast.makeText(getContext(),
                     errorString, Toast.LENGTH_SHORT)
                     .show();

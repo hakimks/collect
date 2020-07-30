@@ -2,7 +2,7 @@ package org.odk.collect.android.widgets;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.app.AlertDialog;
+import androidx.appcompat.app.AlertDialog;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -19,18 +19,20 @@ import org.javarosa.core.model.data.IAnswerData;
 import org.javarosa.core.model.data.StringData;
 import org.javarosa.core.model.osm.OSMTag;
 import org.javarosa.core.model.osm.OSMTagItem;
-import org.javarosa.form.api.FormEntryPrompt;
 import org.odk.collect.android.R;
 import org.odk.collect.android.application.Collect;
-import org.odk.collect.android.http.CollectServerClient;
-import org.odk.collect.android.logic.FormController;
+import org.odk.collect.android.formentry.questions.QuestionDetails;
+import org.odk.collect.android.formentry.questions.WidgetViewUtils;
+import org.odk.collect.android.javarosawrapper.FormController;
 import org.odk.collect.android.utilities.FileUtils;
-import org.odk.collect.android.utilities.ViewIds;
-import org.odk.collect.android.widgets.interfaces.BinaryWidget;
+import org.odk.collect.android.widgets.interfaces.BinaryDataReceiver;
+import org.odk.collect.android.widgets.interfaces.ButtonClickListener;
+import org.odk.collect.android.widgets.utilities.WaitingForDataRegistry;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.odk.collect.android.formentry.questions.WidgetViewUtils.createSimpleButton;
 import static org.odk.collect.android.utilities.ApplicationConstants.RequestCodes;
 
 /**
@@ -40,26 +42,28 @@ import static org.odk.collect.android.utilities.ApplicationConstants.RequestCode
  * @author Nicholas Hallahan nhallahan@spatialdev.com
  */
 @SuppressLint("ViewConstructor")
-public class OSMWidget extends QuestionWidget implements BinaryWidget {
+public class OSMWidget extends QuestionWidget implements BinaryDataReceiver, ButtonClickListener {
 
     // button colors
     private static final int OSM_GREEN = Color.rgb(126, 188, 111);
     private static final int OSM_BLUE = Color.rgb(112, 146, 255);
 
-    private final Button launchOpenMapKitButton;
+    final Button launchOpenMapKitButton;
     private final String instanceDirectory;
     private final TextView errorTextView;
     private final TextView osmFileNameHeaderTextView;
-    private final TextView osmFileNameTextView;
+    final TextView osmFileNameTextView;
 
     private final List<OSMTag> osmRequiredTags;
     private final String instanceId;
     private final int formId;
     private final String formFileName;
+    private final WaitingForDataRegistry waitingForDataRegistry;
     private String osmFileName;
 
-    public OSMWidget(Context context, FormEntryPrompt prompt) {
-        super(context, prompt);
+    public OSMWidget(Context context, QuestionDetails questionDetails, WaitingForDataRegistry waitingForDataRegistry) {
+        super(context, questionDetails);
+        this.waitingForDataRegistry = waitingForDataRegistry;
 
         FormController formController = Collect.getInstance().getFormController();
 
@@ -70,17 +74,17 @@ public class OSMWidget extends QuestionWidget implements BinaryWidget {
         formId = formController.getFormDef().getID();
 
         errorTextView = new TextView(context);
-        errorTextView.setId(ViewIds.generateViewId());
+        errorTextView.setId(View.generateViewId());
         errorTextView.setText(R.string.invalid_osm_data);
 
         // Determine the tags required
-        osmRequiredTags = prompt.getQuestion().getOsmTags();
+        osmRequiredTags = questionDetails.getPrompt().getQuestion().getOsmTags();
 
         // If an OSM File has already been saved, get the name.
-        osmFileName = prompt.getAnswerText();
+        osmFileName = questionDetails.getPrompt().getAnswerText();
 
         // Setup Launch OpenMapKit Button
-        launchOpenMapKitButton = getSimpleButton(R.id.simple_button);
+        launchOpenMapKitButton = createSimpleButton(getContext(), R.id.simple_button, getFormEntryPrompt().isReadOnly(), getAnswerFontSize(), this);
 
         // Button Styling
         if (osmFileName != null) {
@@ -96,7 +100,7 @@ public class OSMWidget extends QuestionWidget implements BinaryWidget {
         }
 
         osmFileNameHeaderTextView = new TextView(context);
-        osmFileNameHeaderTextView.setId(ViewIds.generateViewId());
+        osmFileNameHeaderTextView.setId(View.generateViewId());
         osmFileNameHeaderTextView.setTextSize(20);
         osmFileNameHeaderTextView.setTypeface(null, Typeface.BOLD);
         osmFileNameHeaderTextView.setPadding(10, 0, 0, 10);
@@ -104,7 +108,7 @@ public class OSMWidget extends QuestionWidget implements BinaryWidget {
 
         // text view showing the resulting OSM file name
         osmFileNameTextView = new TextView(context);
-        osmFileNameTextView.setId(ViewIds.generateViewId());
+        osmFileNameTextView.setId(View.generateViewId());
         osmFileNameTextView.setTextSize(18);
         osmFileNameTextView.setTypeface(null, Typeface.ITALIC);
         if (osmFileName != null) {
@@ -123,7 +127,7 @@ public class OSMWidget extends QuestionWidget implements BinaryWidget {
         answerLayout.addView(errorTextView);
         answerLayout.addView(osmFileNameHeaderTextView);
         answerLayout.addView(osmFileNameTextView);
-        addAnswerView(answerLayout);
+        addAnswerView(answerLayout, WidgetViewUtils.getStandardMargin(context));
 
         errorTextView.setVisibility(View.GONE);
     }
@@ -132,7 +136,7 @@ public class OSMWidget extends QuestionWidget implements BinaryWidget {
         try {
             //launch with intent that sends plain text
             Intent launchIntent = new Intent(Intent.ACTION_SEND);
-            launchIntent.setType(CollectServerClient.getPlainTextMimeType());
+            launchIntent.setType("text/plain");
 
             //send form id
             launchIntent.putExtra("FORM_ID", String.valueOf(formId));
@@ -155,10 +159,10 @@ public class OSMWidget extends QuestionWidget implements BinaryWidget {
             writeOsmRequiredTagsToExtras(launchIntent);
 
             try {
-                waitForData();
+                waitingForDataRegistry.waitForData(getFormEntryPrompt().getIndex());
                 ((Activity) getContext()).startActivityForResult(launchIntent, RequestCodes.OSM_CAPTURE);
             } catch (ActivityNotFoundException e) {
-                cancelWaitingForData();
+                waitingForDataRegistry.cancelWaitingForData();
                 errorTextView.setVisibility(View.VISIBLE);
             }
 

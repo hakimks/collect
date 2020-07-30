@@ -26,8 +26,10 @@ import android.widget.TextView;
 
 import org.odk.collect.android.R;
 import org.odk.collect.android.dao.FormsDao;
-import org.odk.collect.android.provider.FormsProviderAPI;
+import org.odk.collect.android.provider.FormsProviderAPI.FormsColumns;
+import org.odk.collect.android.provider.InstanceProvider;
 import org.odk.collect.android.provider.InstanceProviderAPI;
+import org.odk.collect.android.provider.InstanceProviderAPI.InstanceColumns;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -52,12 +54,14 @@ public class InstanceListCursorAdapter extends SimpleCursorAdapter {
         ImageView imageView = view.findViewById(R.id.image);
         setImageFromStatus(imageView);
 
+        setUpSubtext(view);
+
         // Some form lists never contain disabled items; if so, we're done.
         if (!shouldCheckDisabled) {
             return view;
         }
 
-        String formId = getCursor().getString(getCursor().getColumnIndex(InstanceProviderAPI.InstanceColumns.JR_FORM_ID));
+        String formId = getCursor().getString(getCursor().getColumnIndex(InstanceColumns.JR_FORM_ID));
         Cursor cursor = new FormsDao().getFormsCursorForFormId(formId);
 
         boolean formExists = false;
@@ -65,7 +69,7 @@ public class InstanceListCursorAdapter extends SimpleCursorAdapter {
         if (cursor != null) {
             try {
                 if (cursor.moveToFirst()) {
-                    int base64RSAPublicKeyColumnIndex = cursor.getColumnIndex(FormsProviderAPI.FormsColumns.BASE64_RSA_PUBLIC_KEY);
+                    int base64RSAPublicKeyColumnIndex = cursor.getColumnIndex(FormsColumns.BASE64_RSA_PUBLIC_KEY);
                     String base64RSAPublicKey = cursor.getString(base64RSAPublicKeyColumnIndex);
                     isFormEncrypted = base64RSAPublicKey != null && !base64RSAPublicKey.isEmpty();
                     formExists = true;
@@ -75,7 +79,7 @@ public class InstanceListCursorAdapter extends SimpleCursorAdapter {
             }
         }
 
-        Long date = getCursor().getLong(getCursor().getColumnIndex(InstanceProviderAPI.InstanceColumns.DELETED_DATE));
+        long date = getCursor().getLong(getCursor().getColumnIndex(InstanceColumns.DELETED_DATE));
 
         if (date != 0 || !formExists || isFormEncrypted) {
             String disabledMessage;
@@ -134,22 +138,35 @@ public class InstanceListCursorAdapter extends SimpleCursorAdapter {
         imageView.setAlpha(0.38f);
     }
 
-    private void setImageFromStatus(ImageView imageView) {
-        String formStatus = getCursor().getString(getCursor().getColumnIndex(InstanceProviderAPI.InstanceColumns.STATUS));
+    private void setUpSubtext(View view) {
+        long lastStatusChangeDate = getCursor().getLong(getCursor().getColumnIndex(InstanceColumns.LAST_STATUS_CHANGE_DATE));
+        String status = getCursor().getString(getCursor().getColumnIndex(InstanceColumns.STATUS));
+        String subtext = InstanceProvider.getDisplaySubtext(context, status, new Date(lastStatusChangeDate));
 
+        final TextView formSubtitle = view.findViewById(R.id.form_subtitle);
+        formSubtitle.setText(subtext);
+    }
+
+    private void setImageFromStatus(ImageView imageView) {
+        String formStatus = getCursor().getString(getCursor().getColumnIndex(InstanceColumns.STATUS));
+
+        int imageResourceId = getFormStateImageResourceIdForStatus(formStatus);
+        imageView.setImageResource(imageResourceId);
+        imageView.setTag(imageResourceId);
+    }
+
+    public static int getFormStateImageResourceIdForStatus(String formStatus) {
         switch (formStatus) {
             case InstanceProviderAPI.STATUS_INCOMPLETE:
-                imageView.setImageResource(R.drawable.form_state_saved);
-                break;
+                return R.drawable.form_state_saved_circle;
             case InstanceProviderAPI.STATUS_COMPLETE:
-                imageView.setImageResource(R.drawable.form_state_finalized);
-                break;
+                return R.drawable.form_state_finalized_circle;
             case InstanceProviderAPI.STATUS_SUBMITTED:
-                imageView.setImageResource(R.drawable.form_state_submitted);
-                break;
+                return R.drawable.form_state_submitted_circle;
             case InstanceProviderAPI.STATUS_SUBMISSION_FAILED:
-                imageView.setImageResource(R.drawable.form_state_submission_failed);
-                break;
+                return R.drawable.form_state_submission_failed_circle;
         }
+
+        return -1;
     }
 }

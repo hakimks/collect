@@ -1,6 +1,8 @@
 package org.odk.collect.android.widgets;
 
 import android.content.Intent;
+import android.view.View;
+
 import androidx.annotation.NonNull;
 
 import com.google.common.collect.ImmutableList;
@@ -15,11 +17,15 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.odk.collect.android.R;
-import org.odk.collect.android.logic.FormController;
+import org.odk.collect.android.formentry.questions.QuestionDetails;
+import org.odk.collect.android.javarosawrapper.FormController;
 import org.odk.collect.android.widgets.base.BinaryWidgetTest;
+import org.odk.collect.android.widgets.support.FakeWaitingForDataRegistry;
 
 import java.io.File;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.when;
 
 /**
@@ -40,7 +46,7 @@ public class OSMWidgetTest extends BinaryWidgetTest<OSMWidget, StringData> {
     @NonNull
     @Override
     public OSMWidget createWidget() {
-        return new OSMWidget(activity, formEntryPrompt);
+        return new OSMWidget(activity, new QuestionDetails(formEntryPrompt, "formAnalyticsID"), new FakeWaitingForDataRegistry());
     }
 
     @NonNull
@@ -87,5 +93,12 @@ public class OSMWidgetTest extends BinaryWidgetTest<OSMWidget, StringData> {
 
         Intent intent = getIntentLaunchedByClick(R.id.simple_button);
         assertActionEquals(Intent.ACTION_SEND, intent);
+    }
+
+    @Test
+    public void usingReadOnlyOptionShouldMakeAllClickableElementsDisabled() {
+        when(formEntryPrompt.isReadOnly()).thenReturn(true);
+
+        assertThat(getSpyWidget().launchOpenMapKitButton.getVisibility(), is(View.GONE));
     }
 }

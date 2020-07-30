@@ -18,6 +18,8 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
+
+import android.view.ViewGroup;
 import android.widget.RadioButton;
 
 import org.javarosa.core.model.FormIndex;
@@ -26,15 +28,17 @@ import org.javarosa.core.model.data.IAnswerData;
 import org.javarosa.core.model.data.SelectOneData;
 import org.javarosa.core.model.data.StringData;
 import org.javarosa.core.model.data.helper.Selection;
-import org.javarosa.form.api.FormEntryPrompt;
 import org.odk.collect.android.adapters.SelectOneListAdapter;
 import org.odk.collect.android.application.Collect;
 import org.odk.collect.android.exception.JavaRosaException;
+import org.odk.collect.android.formentry.questions.QuestionDetails;
 import org.odk.collect.android.listeners.AdvanceToNextListener;
-import org.odk.collect.android.logic.FormController;
+import org.odk.collect.android.javarosawrapper.FormController;
 import org.odk.collect.android.widgets.interfaces.MultiChoiceWidget;
 
 import timber.log.Timber;
+
+import static org.odk.collect.android.formentry.media.FormMediaUtils.getPlayColor;
 
 /**
  * SelectOneWidgets handles select-one fields using radio buttons.
@@ -51,15 +55,16 @@ public abstract class AbstractSelectOneWidget extends SelectTextWidget implement
     private String selectedValue;
     private final boolean autoAdvance;
     SelectOneListAdapter adapter;
+    private RecyclerView recyclerView;
 
-    public AbstractSelectOneWidget(Context context, FormEntryPrompt prompt, boolean autoAdvance) {
-        super(context, prompt);
+    public AbstractSelectOneWidget(Context context, QuestionDetails questionDetails, boolean autoAdvance) {
+        super(context, questionDetails);
 
-        if (prompt.getAnswerValue() != null) {
+        if (questionDetails.getPrompt().getAnswerValue() != null) {
             if (this instanceof ItemsetWidget) {
-                selectedValue = prompt.getAnswerValue().getDisplayText();
+                selectedValue = questionDetails.getPrompt().getAnswerValue().getDisplayText();
             } else { // Regular SelectOneWidget
-                selectedValue = ((Selection) prompt.getAnswerValue().getValue()).getValue();
+                selectedValue = ((Selection) questionDetails.getPrompt().getAnswerValue().getValue()).getValue();
             }
         }
 
@@ -91,10 +96,10 @@ public abstract class AbstractSelectOneWidget extends SelectTextWidget implement
     }
 
     protected void createLayout() {
-        adapter = new SelectOneListAdapter(items, selectedValue, this, numColumns);
+        adapter = new SelectOneListAdapter(items, selectedValue, this, numColumns, this.getFormEntryPrompt(), this.getReferenceManager(), this.getAnswerFontSize(), this.getAudioHelper(), getPlayColor(getFormEntryPrompt(), themeUtils), this.getContext());
 
         if (items != null) {
-            RecyclerView recyclerView = setUpRecyclerView();
+            recyclerView = setUpRecyclerView();
             recyclerView.setAdapter(adapter);
             answerLayout.addView(recyclerView);
             adjustRecyclerViewSize(adapter, recyclerView);
@@ -136,10 +141,6 @@ public abstract class AbstractSelectOneWidget extends SelectTextWidget implement
         widgetValueChanged();
     }
 
-    public boolean isAutoAdvance() {
-        return autoAdvance;
-    }
-
     @Override
     public int getChoiceCount() {
         return adapter.getItemCount();
@@ -152,5 +153,9 @@ public abstract class AbstractSelectOneWidget extends SelectTextWidget implement
         button.setChecked(isSelected);
 
         adapter.onCheckedChanged(button, isSelected);
+    }
+
+    public ViewGroup getChoicesList() {
+        return recyclerView;
     }
 }

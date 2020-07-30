@@ -25,28 +25,28 @@ import android.widget.ArrayAdapter;
 import android.widget.TextView;
 
 import org.odk.collect.android.R;
-import org.odk.collect.android.logic.FormDetails;
+import org.odk.collect.android.formmanagement.ServerFormDetails;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import static org.odk.collect.android.activities.FormDownloadList.FORMID_DISPLAY;
-import static org.odk.collect.android.activities.FormDownloadList.FORMNAME;
-import static org.odk.collect.android.activities.FormDownloadList.FORM_ID_KEY;
+import static org.odk.collect.android.activities.FormDownloadListActivity.FORMID_DISPLAY;
+import static org.odk.collect.android.activities.FormDownloadListActivity.FORMNAME;
+import static org.odk.collect.android.activities.FormDownloadListActivity.FORM_ID_KEY;
 
 public class FormDownloadListAdapter extends ArrayAdapter {
 
     private final ArrayList<HashMap<String, String>> filteredFormList;
-    private HashMap<String, FormDetails> formIdsToDetails;
+    private HashMap<String, ServerFormDetails> formIdsToDetails;
 
     public FormDownloadListAdapter(Context context, ArrayList<HashMap<String, String>> filteredFormList,
-                                   HashMap<String, FormDetails> formIdsToDetails) {
+                                   HashMap<String, ServerFormDetails> formIdsToDetails) {
         super(context, R.layout.form_chooser_list_item_multiple_choice, filteredFormList);
         this.filteredFormList = filteredFormList;
         this.formIdsToDetails = formIdsToDetails;
     }
 
-    public void setFromIdsToDetails(HashMap<String, FormDetails> formIdsToDetails) {
+    public void setFromIdsToDetails(HashMap<String, ServerFormDetails> formIdsToDetails) {
         this.formIdsToDetails = formIdsToDetails;
     }
 
@@ -79,8 +79,7 @@ public class FormDownloadListAdapter extends ArrayAdapter {
         holder.formSubtitle.setText(formAtPosition.get(FORMID_DISPLAY));
 
         if (formIdsToDetails.get(formIDAtPosition) != null
-                && (formIdsToDetails.get(formIDAtPosition).isNewerFormVersionAvailable()
-                || formIdsToDetails.get(formIDAtPosition).areNewerMediaFilesAvailable())) {
+                && formIdsToDetails.get(formIDAtPosition).isUpdated()) {
             holder.formUpdateAlert.setVisibility(View.VISIBLE);
         } else {
             holder.formUpdateAlert.setVisibility(View.GONE);

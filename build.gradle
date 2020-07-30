@@ -3,19 +3,19 @@ buildscript {
     repositories {
         google()
         jcenter()
-        maven { url 'https://maven.fabric.io/public' }
     }
-    dependencies {
-        classpath 'com.android.tools.build:gradle:3.4.0'
-        classpath 'com.google.gms:google-services:4.0.1'
-        classpath 'org.ow2.asm:asm:6.0' // https://github.com/jacoco/jacoco/issues/639#issuecomment-355424756
-        classpath 'org.jacoco:org.jacoco.core:0.8.0'
-        classpath 'io.fabric.tools:gradle:1.28.1'
-    }
-}
 
-plugins {
-    id 'com.github.spotbugs' version '1.6.4'
+    ext.kotlin_version = '1.3.72'
+
+    dependencies {
+        classpath 'com.android.tools.build:gradle:4.0.0'
+        classpath 'com.google.gms:google-services:4.3.3'
+        classpath 'org.ow2.asm:asm:7.3.1' // https://github.com/jacoco/jacoco/issues/639#issuecomment-355424756
+        classpath 'org.jacoco:org.jacoco.core:0.8.5'
+        classpath 'com.google.firebase:firebase-crashlytics-gradle:2.1.0'
+        classpath 'com.google.firebase:perf-plugin:1.3.1'
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
 }
 
 allprojects {
@@ -26,7 +26,10 @@ allprojects {
         jcenter()
         maven { url 'https://oss.sonatype.org/content/groups/public' }
         maven { url 'https://jitpack.io' }
-        maven { url 'https://staging.dev.medicmobile.org/_couch/maven-repo' }
+        maven {
+            url 'https://staging.dev.medicmobile.org/_couch/maven-repo'
+            metadataSources { artifact() }
+        }
     }
 }
 
@@ -39,17 +42,30 @@ task checkAll(type: GradleBuild) {
 }
 
 task checkCode(type: GradleBuild) {
-    tasks = ['pmd', 'checkstyle', 'lintDebug', 'spotbugs']
+    tasks = ['pmd', 'checkstyle', 'lintDebug']
 }
 
 task checkTests(type: GradleBuild) {
     tasks = ['testDebugUnitTest', 'connectedDebugAndroidTest']
 }
 
+task checkFeature(type: GradleBuild) {
+    tasks = ["connectedDebugAndroidTest"]
+    startParameter.projectProperties = ["android.testInstrumentationRunnerArguments.package": "org.odk.collect.android.feature"]
+}
+
+task checkRegression(type: GradleBuild) {
+    tasks = ["connectedDebugAndroidTest"]
+    startParameter.projectProperties = ["android.testInstrumentationRunnerArguments.package": "org.odk.collect.android.regression"]
+}
+
+task checkInstrumented(type: GradleBuild) {
+    tasks = ["connectedDebugAndroidTest"]
+    startParameter.projectProperties = ["android.testInstrumentationRunnerArguments.package": "org.odk.collect.android.instrumented"]
+}
+
 ext {
-    leakyCanaryVersion = '1.5.4'
-    daggerVersion = '2.16'
-    rxLifecycleVersion = '2.2.1'
-    workManagerVersion = "1.0.0-alpha10"
-    okhttp3Version = '3.11.0'
+    fragmentVersion = '1.2.4'
+    daggerVersion = '2.27'
+    okhttp3Version = '4.4.1'
 }

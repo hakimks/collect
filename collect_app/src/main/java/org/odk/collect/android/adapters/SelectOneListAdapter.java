@@ -16,10 +16,7 @@
 
 package org.odk.collect.android.adapters;
 
-import androidx.annotation.NonNull;
-import androidx.appcompat.widget.AppCompatRadioButton;
-import androidx.core.content.ContextCompat;
-
+import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -28,9 +25,16 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.RadioButton;
 
+import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
+
 import org.javarosa.core.model.SelectChoice;
 import org.javarosa.core.model.data.helper.Selection;
+import org.javarosa.core.reference.ReferenceManager;
+import org.javarosa.form.api.FormEntryPrompt;
 import org.odk.collect.android.R;
+import org.odk.collect.android.audio.AudioHelper;
+import org.odk.collect.android.formentry.questions.AudioVideoImageTextLabel;
 import org.odk.collect.android.widgets.AbstractSelectOneWidget;
 
 import java.util.List;
@@ -39,19 +43,22 @@ public class SelectOneListAdapter extends AbstractSelectListAdapter
         implements View.OnClickListener, CompoundButton.OnCheckedChangeListener {
 
     private String selectedValue;
+    private final int playColor;
     private RadioButton selectedRadioButton;
     private View selectedItem;
 
-    public SelectOneListAdapter(List<SelectChoice> items, String selectedValue, AbstractSelectOneWidget widget, int numColumns) {
-        super(items, widget, numColumns);
+    @SuppressWarnings("PMD.ExcessiveParameterList")
+    public SelectOneListAdapter(List<SelectChoice> items, String selectedValue, AbstractSelectOneWidget widget, int numColumns, FormEntryPrompt formEntryPrompt, ReferenceManager referenceManager, int answerFontSize, AudioHelper audioHelper, int playColor, Context context) {
+        super(items, widget, numColumns, formEntryPrompt, referenceManager, answerFontSize, audioHelper, context);
         this.selectedValue = selectedValue;
+        this.playColor = playColor;
     }
 
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         return new ViewHolder(noButtonsMode
-                ? LayoutInflater.from(parent.getContext()).inflate(R.layout.select_item_layout, null)
-                : LayoutInflater.from(parent.getContext()).inflate(R.layout.quick_select_layout, null));
+                ? new FrameLayout(parent.getContext())
+                : new AudioVideoImageTextLabel(parent.getContext()));
     }
 
     @Override
@@ -79,30 +86,35 @@ public class SelectOneListAdapter extends AbstractSelectListAdapter
             if (noButtonsMode) {
                 view = (FrameLayout) v;
             } else {
-                autoAdvanceIcon = v.findViewById(R.id.auto_advance_icon);
-                autoAdvanceIcon.setVisibility(((AbstractSelectOneWidget) widget).isAutoAdvance() ? View.VISIBLE : View.GONE);
-                mediaLayout = v.findViewById(R.id.mediaLayout);
-                widget.initMediaLayoutSetUp(mediaLayout);
+                audioVideoImageTextLabel = (AudioVideoImageTextLabel) v;
+                audioVideoImageTextLabel.setPlayTextColor(playColor);
+                adjustAudioVideoImageTextLabelParams();
             }
         }
 
         void bind(final int index) {
             super.bind(index);
-            if (noButtonsMode && filteredItems.get(index).getValue().equals(selectedValue)) {
-                view.getChildAt(0).setBackground(ContextCompat.getDrawable(view.getContext(), R.drawable.select_item_border));
-                selectedItem = view.getChildAt(0);
+            if (noButtonsMode) {
+                if (filteredItems.get(index).getValue().equals(selectedValue)) {
+                    view.setBackground(ContextCompat.getDrawable(view.getContext(), R.drawable.select_item_border));
+                    selectedItem = view;
+                } else {
+                    view.setBackground(null);
+                }
             }
         }
     }
 
     @Override
-    RadioButton setUpButton(final int index) {
-        AppCompatRadioButton radioButton = new AppCompatRadioButton(widget.getContext());
-        adjustButton(radioButton, index);
+    RadioButton createButton(final int index, ViewGroup parent) {
+        RadioButton radioButton = (RadioButton) LayoutInflater.from(parent.getContext()).inflate(R.layout.select_one_item, null);
+        setUpButton(radioButton, index);
         radioButton.setOnClickListener(this);
         radioButton.setOnCheckedChangeListener(this);
 
-        if (filteredItems.get(index).getValue().equals(selectedValue)) {
+        String value = filteredItems.get(index).getValue();
+
+        if (value != null && value.equals(selectedValue)) {
             radioButton.setChecked(true);
         }
 

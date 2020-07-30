@@ -16,7 +16,7 @@
 
 package org.odk.collect.android.utilities;
 
-import android.app.AlertDialog;
+import androidx.appcompat.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.view.LayoutInflater;
@@ -45,6 +45,10 @@ public class AuthDialogUtility {
         Collect.getInstance().getComponent().inject(this);
     }
 
+    /**
+     * @deprecated should use {@link org.odk.collect.android.preferences.ServerAuthDialogFragment} instead
+     */
+    @Deprecated
     public AlertDialog createDialog(final Context context,
                                     final AuthDialogUtilityResultListener resultListener, String url) {
 

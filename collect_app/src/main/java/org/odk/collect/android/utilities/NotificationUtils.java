@@ -24,45 +24,38 @@ import android.os.Build;
 import androidx.core.app.NotificationCompat;
 
 import org.odk.collect.android.R;
-import org.odk.collect.android.application.Collect;
 
 public class NotificationUtils {
 
     public static final String CHANNEL_ID = "collect_notification_channel";
-    public static final int FORM_UPDATE_NOTIFICATION_ID = 0;
 
     private NotificationUtils() {
     }
 
-    public static void createNotificationChannel(Collect collect) {
+    public static void createNotificationChannel(Context context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationManager notificationManager = collect.getSystemService(NotificationManager.class);
+            NotificationManager notificationManager = context.getSystemService(NotificationManager.class);
 
             if (notificationManager != null) {
                 notificationManager.createNotificationChannel(new NotificationChannel(
                                         CHANNEL_ID,
-                                        collect.getString(R.string.notification_channel_name),
+                                        context.getString(R.string.notification_channel_name),
                                         NotificationManager.IMPORTANCE_DEFAULT)
                 );
             }
         }
     }
 
-    public static void showNotification(PendingIntent contentIntent,
-                                        int notificationId,
-                                        int title,
-                                        String contentText) {
-        Context context = Collect.getInstance();
+    public static void showNotification(Context context, NotificationManager manager, String title, String content, PendingIntent contentIntent, int notificationId) {
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID).setContentIntent(contentIntent);
 
         builder
-                .setContentTitle(context.getString(title))
-                .setContentText(contentText)
+                .setContentTitle(title)
+                .setContentText(content)
                 .setSmallIcon(IconUtils.getNotificationAppIcon())
                 .setAutoCancel(true);
 
-        NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         if (manager != null) {
             manager.notify(notificationId, builder.build());
         }

@@ -24,18 +24,21 @@ import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.provider.Settings;
-import androidx.annotation.NonNull;
 import android.text.format.DateUtils;
 import android.view.Window;
+
+import androidx.annotation.NonNull;
 
 import com.google.android.gms.location.LocationListener;
 
 import org.odk.collect.android.R;
+import org.odk.collect.android.location.client.GoogleFusedLocationClient;
 import org.odk.collect.android.location.client.LocationClient;
-import org.odk.collect.android.location.client.LocationClients;
-import org.odk.collect.android.utilities.GeoPointUtils;
+import org.odk.collect.android.location.client.LocationClientProvider;
+import org.odk.collect.android.utilities.GeoUtils;
+import org.odk.collect.android.utilities.PlayServicesChecker;
 import org.odk.collect.android.utilities.ToastUtils;
-import org.odk.collect.android.widgets.GeoPointWidget;
+import org.odk.collect.android.widgets.GeoPointMapWidget;
 
 import java.text.DecimalFormat;
 import java.util.Timer;
@@ -61,7 +64,7 @@ public class GeoPointActivity extends CollectAbstractActivity implements Locatio
     private LocationClient locationClient;
     private Location location;
 
-    private double locationAccuracy;
+    private double targetAccuracy;
 
     private int locationCount;
     private int numberOfAvailableSatellites;
@@ -70,11 +73,14 @@ public class GeoPointActivity extends CollectAbstractActivity implements Locatio
 
     private String dialogMessage;
 
+    private Timer timer;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         if (!areLocationPermissionsGranted(this)) {
+            ToastUtils.showLongToast(R.string.not_granted_permission);
             finish();
             return;
         }
@@ -89,17 +95,18 @@ public class GeoPointActivity extends CollectAbstractActivity implements Locatio
 
         Intent intent = getIntent();
 
-        locationAccuracy = GeoPointWidget.DEFAULT_LOCATION_ACCURACY;
+        targetAccuracy = GeoPointMapWidget.DEFAULT_LOCATION_ACCURACY;
         if (intent != null && intent.getExtras() != null) {
-            if (intent.hasExtra(GeoPointWidget.ACCURACY_THRESHOLD)) {
-                locationAccuracy = intent.getDoubleExtra(GeoPointWidget.ACCURACY_THRESHOLD,
-                        GeoPointWidget.DEFAULT_LOCATION_ACCURACY);
+            if (intent.hasExtra(GeoPointMapWidget.ACCURACY_THRESHOLD)) {
+                targetAccuracy = intent.getDoubleExtra(GeoPointMapWidget.ACCURACY_THRESHOLD,
+                        GeoPointMapWidget.DEFAULT_LOCATION_ACCURACY);
             }
         }
 
         setTitle(getString(R.string.get_location));
 
-        locationClient = LocationClients.clientForContext(this);
+        locationClient = LocationClientProvider.getClient(this, new PlayServicesChecker(),
+                () -> new GoogleFusedLocationClient(getApplication()));
         if (locationClient.canSetUpdateIntervals()) {
             locationClient.setUpdateIntervals(LOCATION_UPDATE_INTERVAL, LOCATION_FASTEST_UPDATE_INTERVAL);
         }
@@ -121,7 +128,8 @@ public class GeoPointActivity extends CollectAbstractActivity implements Locatio
 
         if (locationDialog != null) {
             locationDialog.show();
-            new Timer().schedule(new TimerTask() {
+            timer = new Timer();
+            timer.schedule(new TimerTask() {
                 @Override
                 public void run() {
                     updateDialogMessage();
@@ -134,6 +142,10 @@ public class GeoPointActivity extends CollectAbstractActivity implements Locatio
     protected void onPause() {
         super.onPause();
 
+        if (timer != null) {
+            timer.cancel();
+        }
+
         // We're not using managed dialogs, so we have to dismiss the dialog to prevent it from
         // leaking memory.
         if (locationDialog != null && locationDialog.isShowing()) {
@@ -143,7 +155,14 @@ public class GeoPointActivity extends CollectAbstractActivity implements Locatio
 
     @Override
     protected void onStop() {
+        LocationManager locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+        if (locationManager != null) {
+            locationManager.removeGpsStatusListener(this);
+        }
+
         locationClient.stop();
+        locationClient.setListener(null);
+
         super.onStop();
     }
 
@@ -154,7 +173,7 @@ public class GeoPointActivity extends CollectAbstractActivity implements Locatio
         outState.putLong(START_TIME, startTime);
     }
 
-    // LocationClientListener:
+    //region LocationClientListener:
 
     @SuppressLint("MissingPermission") // Checking Permissions handled in constructor
     @Override
@@ -168,7 +187,6 @@ public class GeoPointActivity extends CollectAbstractActivity implements Locatio
 
         if (locationClient.isLocationAvailable()) {
             logLastLocation();
-
         } else {
             finishOnError();
         }
@@ -181,8 +199,9 @@ public class GeoPointActivity extends CollectAbstractActivity implements Locatio
 
     @Override
     public void onClientStop() {
-
     }
+
+    //endregion
 
     /**
      * Sets up the look and actions for the progress dialog while the GPS is searching.
@@ -194,7 +213,6 @@ public class GeoPointActivity extends CollectAbstractActivity implements Locatio
 
         locationDialog.setCancelable(false); // taping outside the dialog doesn't cancel
         locationDialog.setIndeterminate(true);
-        locationDialog.setIcon(android.R.drawable.ic_dialog_info);
         locationDialog.setTitle(getString(R.string.getting_location));
         dialogMessage = getString(R.string.please_wait_long);
 
@@ -262,16 +280,12 @@ public class GeoPointActivity extends CollectAbstractActivity implements Locatio
             Timber.i("onLocationChanged(%d) location: %s", locationCount, location);
 
             if (locationCount > 1) {
-                dialogMessage = getProviderAccuracyMessage(location);
-
-                if (location.getAccuracy() <= locationAccuracy) {
+                if (location.getAccuracy() <= targetAccuracy) {
                     returnLocation();
                 }
-
-            } else {
-                dialogMessage = getAccuracyMessage(location);
             }
 
+            dialogMessage = getAccuracyMessage(location) + "\n\n" + getProviderMessage(location);
             updateDialogMessage();
         } else {
             Timber.i("onLocationChanged(%d)", locationCount);
@@ -300,15 +314,15 @@ public class GeoPointActivity extends CollectAbstractActivity implements Locatio
     }
 
     public String getAccuracyMessage(@NonNull Location location) {
-        return getString(R.string.location_accuracy, location.getAccuracy());
+        return getString(R.string.location_accuracy, truncateDouble(location.getAccuracy()));
     }
 
-    public String getProviderAccuracyMessage(@NonNull Location location) {
-        return getString(R.string.location_provider_accuracy, GeoPointUtils.capitalizeGps(location.getProvider()), truncateDouble(location.getAccuracy()));
+    public String getProviderMessage(@NonNull Location location) {
+        return getString(R.string.location_provider, GeoUtils.capitalizeGps(location.getProvider()));
     }
 
     public String getResultStringForLocation(@NonNull Location location) {
-        return String.format("%s %s %s %s", location.getLatitude(), location.getLongitude(), location.getAltitude(), location.getAccuracy());
+        return GeoUtils.formatLocationResultString(location);
     }
 
     private String truncateDouble(float number) {

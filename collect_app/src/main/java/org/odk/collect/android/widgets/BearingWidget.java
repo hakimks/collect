@@ -33,12 +33,16 @@ import android.widget.TableLayout;
 
 import org.javarosa.core.model.data.IAnswerData;
 import org.javarosa.core.model.data.StringData;
-import org.javarosa.form.api.FormEntryPrompt;
 import org.odk.collect.android.R;
 import org.odk.collect.android.activities.BearingActivity;
+import org.odk.collect.android.formentry.questions.QuestionDetails;
+import org.odk.collect.android.formentry.questions.WidgetViewUtils;
 import org.odk.collect.android.utilities.ToastUtils;
-import org.odk.collect.android.widgets.interfaces.BinaryWidget;
+import org.odk.collect.android.widgets.interfaces.BinaryDataReceiver;
+import org.odk.collect.android.widgets.interfaces.ButtonClickListener;
+import org.odk.collect.android.widgets.utilities.WaitingForDataRegistry;
 
+import static org.odk.collect.android.formentry.questions.WidgetViewUtils.createSimpleButton;
 import static org.odk.collect.android.utilities.ApplicationConstants.RequestCodes;
 
 /**
@@ -47,14 +51,16 @@ import static org.odk.collect.android.utilities.ApplicationConstants.RequestCode
  * @author Carl Hartung (chartung@nafundi.com)
  */
 @SuppressLint("ViewConstructor")
-public class BearingWidget extends QuestionWidget implements BinaryWidget {
-    private final Button getBearingButton;
+public class BearingWidget extends QuestionWidget implements BinaryDataReceiver, ButtonClickListener {
+    final Button getBearingButton;
     private final boolean isSensorAvailable;
-    private final EditText answer;
+    final EditText answer;
     private final Drawable textBackground;
+    private final WaitingForDataRegistry waitingForDataRegistry;
 
-    public BearingWidget(Context context, FormEntryPrompt prompt) {
-        super(context, prompt);
+    public BearingWidget(Context context, QuestionDetails questionDetails, WaitingForDataRegistry waitingForDataRegistry) {
+        super(context, questionDetails);
+        this.waitingForDataRegistry = waitingForDataRegistry;
 
         isSensorAvailable = checkForRequiredSensors();
 
@@ -65,12 +71,12 @@ public class BearingWidget extends QuestionWidget implements BinaryWidget {
         textBackground = answer.getBackground();
         answer.setBackground(null);
 
-        getBearingButton = getSimpleButton(getContext().getString(R.string.get_bearing));
+        getBearingButton = createSimpleButton(getContext(), getFormEntryPrompt().isReadOnly(), getContext().getString(R.string.get_bearing), getAnswerFontSize(), this);
 
         answerLayout.addView(getBearingButton);
         answerLayout.addView(answer);
 
-        String s = prompt.getAnswerText();
+        String s = questionDetails.getPrompt().getAnswerText();
         if (s != null && !s.equals("")) {
             getBearingButton.setText(getContext().getString(R.string.replace_bearing));
             if (!isSensorAvailable) {
@@ -78,7 +84,7 @@ public class BearingWidget extends QuestionWidget implements BinaryWidget {
             }
             setBinaryData(s);
         }
-        addAnswerView(answerLayout);
+        addAnswerView(answerLayout, WidgetViewUtils.getStandardMargin(context));
     }
 
     @Override
@@ -175,7 +181,7 @@ public class BearingWidget extends QuestionWidget implements BinaryWidget {
     public void onButtonClick(int buttonId) {
         if (isSensorAvailable) {
             Intent i = new Intent(getContext(), BearingActivity.class);
-            waitForData();
+            waitingForDataRegistry.waitForData(getFormEntryPrompt().getIndex());
             ((Activity) getContext()).startActivityForResult(i,
                     RequestCodes.BEARING_CAPTURE);
         } else {

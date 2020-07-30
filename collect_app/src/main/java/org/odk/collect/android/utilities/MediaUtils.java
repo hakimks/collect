@@ -14,13 +14,11 @@
 
 package org.odk.collect.android.utilities;
 
-import android.annotation.SuppressLint;
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Environment;
 import android.os.ParcelFileDescriptor;
 import android.provider.DocumentsContract;
@@ -35,6 +33,7 @@ import androidx.annotation.Nullable;
 import org.apache.commons.io.IOUtils;
 import org.odk.collect.android.application.Collect;
 import org.odk.collect.android.exception.GDriveConnectionException;
+import org.odk.collect.android.network.NetworkStateProvider;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -65,7 +64,7 @@ public class MediaUtils {
         // static methods only
     }
 
-    private static String escapePath(String path) {
+    protected static String escapePathForLikeSQLClause(String path) {
         String ep = path;
         ep = ep.replaceAll("\\!", "!!");
         ep = ep.replaceAll("_", "!_");
@@ -111,7 +110,7 @@ public class MediaUtils {
                             projection, select, selectArgs, null);
             if (imageCursor.getCount() > 0) {
                 imageCursor.moveToFirst();
-                List<Uri> imagesToDelete = new ArrayList<Uri>();
+                List<Uri> imagesToDelete = new ArrayList<>();
                 do {
                     String id = imageCursor.getString(imageCursor
                             .getColumnIndex(Images.ImageColumns._ID));
@@ -148,7 +147,7 @@ public class MediaUtils {
         Cursor imageCursor = null;
         try {
             String select = Images.Media.DATA + " like ? escape '!'";
-            String[] selectArgs = {escapePath(folder.getAbsolutePath())};
+            String[] selectArgs = {escapePathForLikeSQLClause(folder.getAbsolutePath())};
 
             String[] projection = {Images.ImageColumns._ID};
             imageCursor = cr
@@ -156,7 +155,7 @@ public class MediaUtils {
                             projection, select, selectArgs, null);
             if (imageCursor.getCount() > 0) {
                 imageCursor.moveToFirst();
-                List<Uri> imagesToDelete = new ArrayList<Uri>();
+                List<Uri> imagesToDelete = new ArrayList<>();
                 do {
                     String id = imageCursor.getString(imageCursor
                             .getColumnIndex(Images.ImageColumns._ID));
@@ -226,7 +225,7 @@ public class MediaUtils {
                             projection, select, selectArgs, null);
             if (audioCursor.getCount() > 0) {
                 audioCursor.moveToFirst();
-                List<Uri> audioToDelete = new ArrayList<Uri>();
+                List<Uri> audioToDelete = new ArrayList<>();
                 do {
                     String id = audioCursor.getString(audioCursor
                             .getColumnIndex(Audio.AudioColumns._ID));
@@ -263,7 +262,7 @@ public class MediaUtils {
         Cursor audioCursor = null;
         try {
             String select = Audio.Media.DATA + " like ? escape '!'";
-            String[] selectArgs = {escapePath(folder.getAbsolutePath())};
+            String[] selectArgs = {escapePathForLikeSQLClause(folder.getAbsolutePath())};
 
             String[] projection = {Audio.AudioColumns._ID};
             audioCursor = cr
@@ -271,7 +270,7 @@ public class MediaUtils {
                             projection, select, selectArgs, null);
             if (audioCursor.getCount() > 0) {
                 audioCursor.moveToFirst();
-                List<Uri> audioToDelete = new ArrayList<Uri>();
+                List<Uri> audioToDelete = new ArrayList<>();
                 do {
                     String id = audioCursor.getString(audioCursor
                             .getColumnIndex(Audio.AudioColumns._ID));
@@ -341,7 +340,7 @@ public class MediaUtils {
                             projection, select, selectArgs, null);
             if (videoCursor.getCount() > 0) {
                 videoCursor.moveToFirst();
-                List<Uri> videoToDelete = new ArrayList<Uri>();
+                List<Uri> videoToDelete = new ArrayList<>();
                 do {
                     String id = videoCursor.getString(videoCursor
                             .getColumnIndex(Video.VideoColumns._ID));
@@ -378,7 +377,7 @@ public class MediaUtils {
         Cursor videoCursor = null;
         try {
             String select = Video.Media.DATA + " like ? escape '!'";
-            String[] selectArgs = {escapePath(folder.getAbsolutePath())};
+            String[] selectArgs = {escapePathForLikeSQLClause(folder.getAbsolutePath())};
 
             String[] projection = {Video.VideoColumns._ID};
             videoCursor = cr
@@ -386,7 +385,7 @@ public class MediaUtils {
                             projection, select, selectArgs, null);
             if (videoCursor.getCount() > 0) {
                 videoCursor.moveToFirst();
-                List<Uri> videoToDelete = new ArrayList<Uri>();
+                List<Uri> videoToDelete = new ArrayList<>();
                 do {
                     String id = videoCursor.getString(videoCursor
                             .getColumnIndex(Video.VideoColumns._ID));
@@ -417,37 +416,10 @@ public class MediaUtils {
      * media prompts. Beginning with KitKat, the responses use a different
      * mechanism and needs a lot of special handling.
      */
-    @SuppressLint("NewApi")
     public static String getPathFromUri(Context ctxt, Uri uri, String pathKey) {
-
-        if (Build.VERSION.SDK_INT >= 19) {
-            return getPath(ctxt, uri);
-        } else {
-            if (uri.toString().startsWith("file")) {
-                return uri.toString().substring(7);
-            } else {
-                String[] projection = {pathKey};
-                Cursor c = null;
-                try {
-                    c = ctxt.getContentResolver().query(uri, projection, null,
-                            null, null);
-                    int columnIndex = c.getColumnIndexOrThrow(pathKey);
-                    String path = null;
-                    if (c.getCount() > 0) {
-                        c.moveToFirst();
-                        path = c.getString(columnIndex);
-                    }
-                    return path;
-                } finally {
-                    if (c != null) {
-                        c.close();
-                    }
-                }
-            }
-        }
+        return getPath(ctxt, uri);
     }
 
-    @SuppressLint("NewApi")
     /**
      * Get a file path from a Uri. This will get the the path for Storage Access
      * Framework Documents, as well as the _data field for the MediaStore and
@@ -464,10 +436,8 @@ public class MediaUtils {
      */
     public static String getPath(final Context context, final Uri uri) {
 
-        final boolean isKitKat = Build.VERSION.SDK_INT >= 19;
-
         // DocumentProvider
-        if (isKitKat && DocumentsContract.isDocumentUri(context, uri)) {
+        if (DocumentsContract.isDocumentUri(context, uri)) {
 
             // ExternalStorageProvider
             if (isExternalStorageDocument(uri)) {
@@ -488,7 +458,7 @@ public class MediaUtils {
                     return id.replaceFirst("raw:", "");
                 }
 
-                String[] contentUriPrefixesToTry = new String[]{
+                String[] contentUriPrefixesToTry = {
                         "content://downloads/public_downloads",
                         "content://downloads/my_downloads",
                         "content://downloads/all_downloads"
@@ -534,7 +504,7 @@ public class MediaUtils {
                 }
 
                 final String selection = "_id=?";
-                final String[] selectionArgs = new String[]{split[1]};
+                final String[] selectionArgs = {split[1]};
 
                 return getDataColumn(context, contentUri, selection,
                         selectionArgs);
@@ -556,20 +526,20 @@ public class MediaUtils {
         return null;
     }
 
-    public static File getFileFromUri(final Context context, final Uri uri, String pathKey) throws GDriveConnectionException {
+    public static File getFileFromUri(final Context context, final Uri uri, String pathKey, NetworkStateProvider connectivityProvider) throws GDriveConnectionException {
         File file = null;
         String filePath = getPathFromUri(context, uri, pathKey);
         if (filePath != null) {
             file = new File(filePath);
         } else if (isGoogleDriveDocument(uri)) {
-            file = getGoogleDriveFile(context, uri);
+            file = getGoogleDriveFile(context, uri, connectivityProvider);
         }
 
         return file;
     }
 
-    private static File getGoogleDriveFile(Context context, Uri uri) throws GDriveConnectionException {
-        if (!Collect.getInstance().isNetworkAvailable()) {
+    private static File getGoogleDriveFile(Context context, Uri uri, NetworkStateProvider connectivityProvider) throws GDriveConnectionException {
+        if (!connectivityProvider.isDeviceOnline()) {
             throw new GDriveConnectionException();
         }
         if (uri == null) {

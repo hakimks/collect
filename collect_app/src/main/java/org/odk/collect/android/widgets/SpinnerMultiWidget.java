@@ -15,44 +15,44 @@
 package org.odk.collect.android.widgets;
 
 import android.annotation.SuppressLint;
-import android.app.AlertDialog;
+import androidx.appcompat.app.AlertDialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.text.TextUtils;
 import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import org.javarosa.core.model.SelectChoice;
 import org.javarosa.core.model.data.IAnswerData;
 import org.javarosa.core.model.data.SelectMultiData;
 import org.javarosa.core.model.data.helper.Selection;
-import org.javarosa.form.api.FormEntryPrompt;
 import org.odk.collect.android.R;
-import org.odk.collect.android.widgets.interfaces.ButtonWidget;
+import org.odk.collect.android.formentry.questions.QuestionDetails;
+import org.odk.collect.android.formentry.questions.WidgetViewUtils;
+import org.odk.collect.android.utilities.StringUtils;
+import org.odk.collect.android.widgets.interfaces.ButtonClickListener;
 import org.odk.collect.android.widgets.interfaces.MultiChoiceWidget;
 import org.odk.collect.android.widgets.warnings.SpacesInUnderlyingValuesWarning;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.odk.collect.android.formentry.questions.WidgetViewUtils.createAnswerTextView;
+import static org.odk.collect.android.formentry.questions.WidgetViewUtils.createSimpleButton;
+
 /**
  * SpinnerMultiWidget, like SelectMultiWidget handles multiple selection fields using checkboxes,
  * but the user clicks a button to see the checkboxes. The goal is to be more compact. If images,
- * audio, or video are specified in the select answers they are ignored. WARNING: There is a bug in
- * android versions previous to 2.0 that affects this widget. You can find the report here:
- * http://code.google.com/p/android/issues/detail?id=922 This bug causes text to be white in alert
- * boxes, which makes the select options invisible in this widget. For this reason, this widget
- * should not be used on phones with android versions lower than 2.0.
+ * audio, or video are specified in the select answers they are ignored.
  *
  * @author Jeff Beorse (jeff@beorse.net)
  */
 @SuppressLint("ViewConstructor")
-public class SpinnerMultiWidget extends ItemsWidget implements ButtonWidget, MultiChoiceWidget {
+public class SpinnerMultiWidget extends ItemsWidget implements ButtonClickListener, MultiChoiceWidget {
 
     // The possible select answers
-    CharSequence[] answerItems;
+    String[] answerItems;
+    CharSequence[] styledAnswerItems;
 
     // The button to push to display the answers to choose from
     Button button;
@@ -67,27 +67,28 @@ public class SpinnerMultiWidget extends ItemsWidget implements ButtonWidget, Mul
     TextView selectionText;
 
     @SuppressWarnings("unchecked")
-    public SpinnerMultiWidget(final Context context, FormEntryPrompt prompt) {
-        super(context, prompt);
+    public SpinnerMultiWidget(final Context context, QuestionDetails questionDetails) {
+        super(context, questionDetails);
 
         selections = new boolean[items.size()];
-        answerItems = new CharSequence[items.size()];
+        answerItems = new String[items.size()];
+        styledAnswerItems = new CharSequence[items.size()];
         alertBuilder = new AlertDialog.Builder(context);
-        button = getSimpleButton(context.getString(R.string.select_answer));
+        button = createSimpleButton(getContext(), getFormEntryPrompt().isReadOnly(), context.getString(R.string.select_answer), getAnswerFontSize(), this);
 
         // Build View
         for (int i = 0; i < items.size(); i++) {
-            answerItems[i] = prompt.getSelectChoiceText(items.get(i));
+            answerItems[i] = questionDetails.getPrompt().getSelectChoiceText(items.get(i));
+            styledAnswerItems[i] = StringUtils.textToHtml(answerItems[i]);
         }
 
-        selectionText = getAnswerTextView();
+        selectionText = createAnswerTextView(getContext(), getAnswerFontSize());
         selectionText.setVisibility(View.GONE);
 
         // Fill in previous answers
-        List<Selection> ve = new ArrayList<>();
-        if (prompt.getAnswerValue() != null) {
-            ve = (List<Selection>) prompt.getAnswerValue().getValue();
-        }
+        List<Selection> ve = questionDetails.getPrompt().getAnswerValue() != null
+                ? (List<Selection>) questionDetails.getPrompt().getAnswerValue().getValue()
+                : new ArrayList<>();
 
         if (ve != null) {
             List<String> selectedValues = new ArrayList<>();
@@ -97,7 +98,7 @@ public class SpinnerMultiWidget extends ItemsWidget implements ButtonWidget, Mul
                 for (Selection s : ve) {
                     if (value.equals(s.getValue())) {
                         selections[i] = true;
-                        selectedValues.add(answerItems[i].toString());
+                        selectedValues.add(answerItems[i]);
                         break;
                     }
                 }
@@ -109,7 +110,7 @@ public class SpinnerMultiWidget extends ItemsWidget implements ButtonWidget, Mul
         answerLayout.setOrientation(LinearLayout.VERTICAL);
         answerLayout.addView(button);
         answerLayout.addView(selectionText);
-        addAnswerView(answerLayout);
+        addAnswerView(answerLayout, WidgetViewUtils.getStandardMargin(context));
 
         SpacesInUnderlyingValuesWarning.forQuestionWidget(this).renderWarningIfNecessary(items);
     }
@@ -119,16 +120,10 @@ public class SpinnerMultiWidget extends ItemsWidget implements ButtonWidget, Mul
         List<Selection> vc = new ArrayList<>();
         for (int i = 0; i < items.size(); i++) {
             if (selections[i]) {
-                SelectChoice sc = items.get(i);
-                vc.add(new Selection(sc));
+                vc.add(new Selection(items.get(i)));
             }
         }
-        if (vc.isEmpty()) {
-            return null;
-        } else {
-            return new SelectMultiData(vc);
-        }
-
+        return vc.isEmpty() ? null : new SelectMultiData(vc);
     }
 
     @Override
@@ -166,39 +161,32 @@ public class SpinnerMultiWidget extends ItemsWidget implements ButtonWidget, Mul
     @Override
     public void onButtonClick(int buttonId) {
         alertBuilder.setTitle(getFormEntryPrompt().getQuestionText()).setPositiveButton(R.string.ok,
-                new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        List<String> selectedValues = new ArrayList<>();
+                (dialog, id) -> {
+                    List<String> selectedValues = new ArrayList<>();
 
-                        for (int i = 0; i < selections.length; i++) {
-                            if (selections[i]) {
-                                selectedValues.add(answerItems[i].toString());
-                            }
+                    for (int i = 0; i < selections.length; i++) {
+                        if (selections[i]) {
+                            selectedValues.add(answerItems[i]);
                         }
-                        showSelectedValues(selectedValues);
                     }
+                    showSelectedValues(selectedValues);
                 });
 
-        alertBuilder.setMultiChoiceItems(answerItems, selections,
-                new DialogInterface.OnMultiChoiceClickListener() {
-
-                    @Override
-                    public void onClick(DialogInterface dialog, int which,
-                                        boolean isChecked) {
-                        selections[which] = isChecked;
-                        widgetValueChanged();
-                    }
+        alertBuilder.setMultiChoiceItems(styledAnswerItems, selections,
+                (dialog, which, isChecked) -> {
+                    selections[which] = isChecked;
+                    widgetValueChanged();
                 });
-        AlertDialog alert = alertBuilder.create();
-        alert.show();
+        alertBuilder.create().show();
     }
 
     private void showSelectedValues(List<String> selectedValues) {
         if (selectedValues.isEmpty()) {
             clearAnswer();
         } else {
-            selectionText.setText(String.format(getContext().getString(R.string.selected_answer),
+            CharSequence answerText = StringUtils.textToHtml(String.format(getContext().getString(R.string.selected_answer),
                     TextUtils.join(", ", selectedValues)));
+            selectionText.setText(answerText);
             selectionText.setVisibility(View.VISIBLE);
         }
     }

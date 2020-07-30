@@ -17,28 +17,30 @@
 package org.odk.collect.android.widgets;
 
 import android.content.Context;
+import android.graphics.drawable.Drawable;
+import android.os.Build;
+import android.util.DisplayMetrics;
+import android.view.LayoutInflater;
+import android.widget.LinearLayout;
+
+import androidx.core.content.ContextCompat;
+import androidx.core.graphics.drawable.DrawableCompat;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import android.util.DisplayMetrics;
-import android.view.Gravity;
-import android.view.LayoutInflater;
-import android.widget.LinearLayout;
-import android.widget.TextView;
+import com.google.android.flexbox.FlexboxLayoutManager;
 
 import org.javarosa.core.model.SelectChoice;
-import org.javarosa.form.api.FormEntryCaption;
-import org.javarosa.form.api.FormEntryPrompt;
 import org.odk.collect.android.R;
 import org.odk.collect.android.activities.FormEntryActivity;
 import org.odk.collect.android.adapters.AbstractSelectListAdapter;
-import org.odk.collect.android.external.ExternalSelectChoice;
+import org.odk.collect.android.formentry.questions.QuestionDetails;
+import org.odk.collect.android.utilities.ThemeUtils;
 import org.odk.collect.android.utilities.WidgetAppearanceUtils;
-import org.odk.collect.android.views.MediaLayout;
 
-import java.util.ArrayList;
-import java.util.List;
+import static org.odk.collect.android.analytics.AnalyticsEvents.AUDIO_QUESTION;
+import static org.odk.collect.android.formentry.media.FormMediaUtils.getPlayableAudioURI;
 
 public abstract class SelectWidget extends ItemsWidget {
 
@@ -51,16 +53,15 @@ public abstract class SelectWidget extends ItemsWidget {
      */
     private static final int MAX_ITEMS_WITHOUT_SCREEN_BOUND = 40;
 
-    protected ArrayList<MediaLayout> playList;
-    protected LinearLayout answerLayout;
+    LinearLayout answerLayout;
     protected int numColumns = 1;
-    private int playcounter;
 
-    public SelectWidget(Context context, FormEntryPrompt prompt) {
-        super(context, prompt);
+    public SelectWidget(Context context, QuestionDetails questionDetails) {
+        super(context, questionDetails);
         answerLayout = new LinearLayout(context);
         answerLayout.setOrientation(LinearLayout.VERTICAL);
-        playList = new ArrayList<>();
+
+        logAnalytics(questionDetails);
     }
 
     @Override
@@ -68,91 +69,36 @@ public abstract class SelectWidget extends ItemsWidget {
     public void setOnLongClickListener(OnLongClickListener l) {
     }
 
-    @Override
-    public void resetQuestionTextColor() {
-        super.resetQuestionTextColor();
-        for (MediaLayout layout : playList) {
-            layout.resetTextFormatting();
-        }
-    }
-
-    @Override
-    public void resetAudioButtonImage() {
-        super.resetAudioButtonImage();
-        for (MediaLayout layout : playList) {
-            layout.resetAudioButtonBitmap();
-        }
-    }
-
-    @Override
-    public void playAllPromptText() {
-        // set up to play the items when the
-        // question text is finished
-        getPlayer().setOnCompletionListener(mediaPlayer -> {
-            resetQuestionTextColor();
-            mediaPlayer.reset();
-            playNextSelectItem();
-        });
-        // plays the question text
-        super.playAllPromptText();
-    }
-
-    private void playNextSelectItem() {
-        if (isShown()) {
-            // if there's more, set up to play the next item
-            if (playcounter < playList.size()) {
-                getPlayer().setOnCompletionListener(mediaPlayer -> {
-                    resetQuestionTextColor();
-                    mediaPlayer.reset();
-                    playNextSelectItem();
-                });
-                // play the current item
-                playList.get(playcounter).playAudio();
-                playcounter++;
-
-            } else {
-                playcounter = 0;
-                getPlayer().setOnCompletionListener(null);
-                getPlayer().reset();
-            }
-        }
-    }
-
-    public void initMediaLayoutSetUp(MediaLayout mediaLayout) {
-        mediaLayout.setAudioListener(this);
-        mediaLayout.setPlayTextColor(getPlayColor());
-        playList.add(mediaLayout);
-    }
-
-    /**
-     * Pull media from the current item and add it to the media layout.
-     */
-    public void addMediaFromChoice(MediaLayout mediaLayout, int index, TextView textView, List<SelectChoice> items) {
-        String audioURI = getFormEntryPrompt().getSpecialFormSelectChoiceText(items.get(index), FormEntryCaption.TEXT_FORM_AUDIO);
-
-        String imageURI;
-        if (items.get(index) instanceof ExternalSelectChoice) {
-            imageURI = ((ExternalSelectChoice) items.get(index)).getImage();
-        } else {
-            imageURI = getFormEntryPrompt().getSpecialFormSelectChoiceText(items.get(index),
-                    FormEntryCaption.TEXT_FORM_IMAGE);
-        }
-
-        textView.setGravity(Gravity.CENTER_VERTICAL);
-
-        String videoURI = getFormEntryPrompt().getSpecialFormSelectChoiceText(items.get(index), "video");
-        String bigImageURI = getFormEntryPrompt().getSpecialFormSelectChoiceText(items.get(index), "big-image");
-
-        mediaLayout.setAVT(textView, audioURI, imageURI, videoURI, bigImageURI, getPlayer());
-    }
-
     protected RecyclerView setUpRecyclerView() {
+        RecyclerView recyclerView = (RecyclerView) LayoutInflater.from(getContext()).inflate(R.layout.recycler_view, null); // keep in an xml file to enable the vertical scrollbar
+
+        return WidgetAppearanceUtils.isFlexAppearance(getFormEntryPrompt())
+                ? getFlexRecyclerView(recyclerView)
+                : getGridRecyclerView(recyclerView);
+    }
+
+    private RecyclerView getFlexRecyclerView(RecyclerView recyclerView) {
+        FlexboxLayoutManager layoutManager = new FlexboxLayoutManager(getContext());
+        recyclerView.setLayoutManager(layoutManager);
+
+        return recyclerView;
+    }
+
+    private RecyclerView getGridRecyclerView(RecyclerView recyclerView) {
         numColumns = WidgetAppearanceUtils.getNumberOfColumns(getFormEntryPrompt(), getContext());
 
-        RecyclerView recyclerView = (RecyclerView) LayoutInflater.from(getContext()).inflate(R.layout.recycler_view, null); // keep in an xml file to enable the vertical scrollbar
         if (numColumns == 1) {
-            recyclerView.addItemDecoration(new DividerItemDecoration(getContext(), DividerItemDecoration.VERTICAL));
+            DividerItemDecoration divider = new DividerItemDecoration(getContext(), DividerItemDecoration.VERTICAL);
+            Drawable drawable = ContextCompat.getDrawable(getContext(), R.drawable.inset_divider_64dp);
+
+            if (android.os.Build.VERSION.SDK_INT <= Build.VERSION_CODES.LOLLIPOP_MR1) {
+                DrawableCompat.setTint(DrawableCompat.wrap(drawable), new ThemeUtils(getContext()).getColorOnSurface());
+            }
+
+            divider.setDrawable(drawable);
+            recyclerView.addItemDecoration(divider);
         }
+
         recyclerView.setLayoutManager(new GridLayoutManager(getContext(), numColumns));
 
         return recyclerView;
@@ -166,6 +112,19 @@ public abstract class SelectWidget extends ItemsWidget {
             recyclerView.getLayoutParams().height = (int) (displayMetrics.heightPixels * 0.9);
         } else {
             recyclerView.setNestedScrollingEnabled(false);
+        }
+    }
+
+    private void logAnalytics(QuestionDetails questionDetails) {
+        if (items != null) {
+            for (SelectChoice choice : items) {
+                String audioURI = getPlayableAudioURI(questionDetails.getPrompt(), choice, getReferenceManager());
+
+                if (audioURI != null) {
+                    analytics.logEvent(AUDIO_QUESTION, "AudioChoice", questionDetails.getFormAnalyticsID());
+                    break;
+                }
+            }
         }
     }
 }

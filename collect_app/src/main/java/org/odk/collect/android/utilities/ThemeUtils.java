@@ -14,18 +14,17 @@
 
 package org.odk.collect.android.utilities;
 
-import android.annotation.TargetApi;
 import android.content.Context;
-import android.os.Build;
+import android.util.TypedValue;
+
 import androidx.annotation.AttrRes;
 import androidx.annotation.ColorInt;
 import androidx.annotation.DrawableRes;
 import androidx.annotation.StyleRes;
-import android.util.TypedValue;
 
 import org.odk.collect.android.R;
-import org.odk.collect.android.preferences.GeneralSharedPreferences;
 import org.odk.collect.android.preferences.GeneralKeys;
+import org.odk.collect.android.preferences.GeneralSharedPreferences;
 
 public final class ThemeUtils {
 
@@ -37,22 +36,43 @@ public final class ThemeUtils {
 
     @StyleRes
     public int getAppTheme() {
-        return isDarkTheme() ? R.style.DarkAppTheme : R.style.LightAppTheme;
+        String theme = getPrefsTheme();
+        if (theme.equals(context.getString(R.string.app_theme_dark))) {
+            return R.style.Theme_Collect_Dark;
+        } else if (theme.equals(context.getString(R.string.app_theme_magenta))) {
+            return R.style.Theme_Collect_Magenta;
+        } else {
+            return R.style.Theme_Collect_Light;
+        }
     }
 
     @StyleRes
     public int getFormEntryActivityTheme() {
-        return isDarkTheme() ? R.style.FormEntryActivityDarkTheme : R.style.FormEntryActivityLightTheme;
+        String theme = getPrefsTheme();
+        if (theme.equals(context.getString(R.string.app_theme_dark))) {
+            return R.style.Theme_Collect_Activity_FormEntryActivity_Dark;
+        } else if (theme.equals(context.getString(R.string.app_theme_magenta))) {
+            return R.style.Theme_Collect_Activity_FormEntryActivity_Magenta;
+        } else {
+            return R.style.Theme_Collect_Activity_FormEntryActivity_Light;
+        }
     }
 
     @StyleRes
     public int getSettingsTheme() {
-        return isDarkTheme() ? R.style.AppTheme_SettingsTheme_Dark : R.style.AppTheme_SettingsTheme_Light;
+        String theme = getPrefsTheme();
+        if (theme.equals(context.getString(R.string.app_theme_dark))) {
+            return R.style.Theme_Collect_Settings_Dark;
+        } else if (theme.equals(context.getString(R.string.app_theme_magenta))) {
+            return R.style.Theme_Collect_Settings_Magenta;
+        } else {
+            return R.style.Theme_Collect_Settings_Light;
+        }
     }
 
     @StyleRes
     public int getBottomDialogTheme() {
-        return isDarkTheme() ? R.style.DarkMaterialDialogSheet : R.style.LightMaterialDialogSheet;
+        return isDarkTheme() ? R.style.Theme_Collect_MaterialDialogSheet_Dark : R.style.Theme_Collect_MaterialDialogSheet_Light;
     }
 
     @DrawableRes
@@ -65,12 +85,11 @@ public final class ThemeUtils {
                 theme == android.R.style.Theme_Holo_Dialog;
     }
 
-    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     @StyleRes
     public int getMaterialDialogTheme() {
-        return isDarkTheme() ?
-                android.R.style.Theme_Material_Dialog :
-                android.R.style.Theme_Material_Light_Dialog;
+        return isDarkTheme()
+                ? R.style.Theme_Collect_Dark_Dialog
+                : R.style.Theme_Collect_Light_Dialog;
     }
 
     @StyleRes
@@ -91,39 +110,44 @@ public final class ThemeUtils {
     }
 
     public boolean isDarkTheme() {
-        String theme = (String) GeneralSharedPreferences.getInstance().get(GeneralKeys.KEY_APP_THEME);
+        String theme = getPrefsTheme();
         return theme.equals(context.getString(R.string.app_theme_dark));
+    }
+
+    private String getPrefsTheme() {
+        return (String) GeneralSharedPreferences.getInstance().get(GeneralKeys.KEY_APP_THEME);
     }
 
     /**
      * @return Text color for the current {@link android.content.res.Resources.Theme}
      */
     @ColorInt
-    public int getPrimaryTextColor() {
-        return getAttributeValue(R.attr.primaryTextColor);
+    public int getColorOnSurface() {
+        return getAttributeValue(R.attr.colorOnSurface);
     }
 
-    /**
-     * @return Accent color for the current {@link android.content.res.Resources.Theme}
-     */
     @ColorInt
     public int getAccentColor() {
         return getAttributeValue(R.attr.colorAccent);
     }
 
-    /**
-     * @return Icon color for the current {@link android.content.res.Resources.Theme}
-     */
     @ColorInt
     public int getIconColor() {
         return getAttributeValue(R.attr.iconColor);
     }
 
-    /**
-     * @return Rank item color for the current {@link android.content.res.Resources.Theme}
-     */
     @ColorInt
-    public int getRankItemColor() {
-        return getAttributeValue(R.attr.rankItemColor);
+    public int getColorPrimary() {
+        return getAttributeValue(R.attr.colorPrimary);
+    }
+
+    @ColorInt
+    public int getColorOnPrimary() {
+        return getAttributeValue(R.attr.colorOnPrimary);
+    }
+
+    @ColorInt
+    public int getColorSecondary() {
+        return getAttributeValue(R.attr.colorSecondary);
     }
 }

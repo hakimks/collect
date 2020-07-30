@@ -19,10 +19,15 @@ import android.content.Context;
 import android.content.Intent;
 import android.view.View;
 import android.widget.Button;
-import org.javarosa.form.api.FormEntryPrompt;
+
 import org.odk.collect.android.R;
 import org.odk.collect.android.activities.DrawActivity;
+import org.odk.collect.android.formentry.questions.QuestionDetails;
+import org.odk.collect.android.formentry.questions.WidgetViewUtils;
+import org.odk.collect.android.widgets.interfaces.ButtonClickListener;
+import org.odk.collect.android.widgets.utilities.WaitingForDataRegistry;
 
+import static org.odk.collect.android.formentry.questions.WidgetViewUtils.createSimpleButton;
 import static org.odk.collect.android.utilities.ApplicationConstants.RequestCodes;
 
 /**
@@ -31,22 +36,22 @@ import static org.odk.collect.android.utilities.ApplicationConstants.RequestCode
  * @author BehrAtherton@gmail.com
  */
 @SuppressLint("ViewConstructor")
-public class DrawWidget extends BaseImageWidget {
+public class DrawWidget extends BaseImageWidget implements ButtonClickListener {
 
-    private Button drawButton;
+    Button drawButton;
 
-    public DrawWidget(Context context, FormEntryPrompt prompt) {
-        super(context, prompt);
+    public DrawWidget(Context context, QuestionDetails prompt, WaitingForDataRegistry waitingForDataRegistry) {
+        super(context, prompt, waitingForDataRegistry);
         imageClickHandler = new DrawImageClickHandler(DrawActivity.OPTION_DRAW, RequestCodes.DRAW_IMAGE, R.string.draw_image);
         setUpLayout();
         addCurrentImageToLayout();
-        addAnswerView(answerLayout);
+        addAnswerView(answerLayout, WidgetViewUtils.getStandardMargin(context));
     }
 
     @Override
     protected void setUpLayout() {
         super.setUpLayout();
-        drawButton = getSimpleButton(getContext().getString(R.string.draw_image));
+        drawButton = createSimpleButton(getContext(), getFormEntryPrompt().isReadOnly(), getContext().getString(R.string.draw_image), getAnswerFontSize(), this);
 
         answerLayout.addView(drawButton);
         answerLayout.addView(errorTextView);
@@ -57,6 +62,11 @@ public class DrawWidget extends BaseImageWidget {
     @Override
     public Intent addExtrasToIntent(Intent intent) {
         return intent;
+    }
+
+    @Override
+    protected boolean doesSupportDefaultValues() {
+        return true;
     }
 
     @Override

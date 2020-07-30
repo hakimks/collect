@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.odk.collect.android.preferences.AdminAndGeneralKeys.ag;
 
@@ -23,47 +25,43 @@ public final class AdminKeys {
     public static final String KEY_VIEW_SENT                    = "view_sent";
     public static final String KEY_GET_BLANK                    = "get_blank";
     public static final String KEY_DELETE_SAVED                 = "delete_saved";
+    public static final String KEY_QR_CODE_SCANNER              = "qr_code_scanner";
 
-    // form entry
-    public static final String KEY_SAVE_MID                     = "save_mid";
-    public static final String KEY_JUMP_TO                      = "jump_to";
-    public static final String KEY_CHANGE_LANGUAGE              = "change_language";
-    public static final String KEY_ACCESS_SETTINGS              = "access_settings";
-    public static final String KEY_SAVE_AS                      = "save_as";
-    public static final String KEY_MARK_AS_FINALIZED            = "mark_as_finalized";
-
-    // server
-    static final String KEY_CHANGE_ADMIN_PASSWORD               = "admin_password";
-    static final String KEY_IMPORT_SETTINGS                     = "import_settings";
     private static final String KEY_CHANGE_SERVER               = "change_server";
-    private static final String KEY_CHANGE_SUBMISSION_TRANSPORT = "change_submission_transport";
-    private static final String KEY_CHANGE_FORM_METADATA        = "change_form_metadata";
 
-    // client
+    private static final String KEY_APP_THEME                   = "change_app_theme";
+    private static final String KEY_APP_LANGUAGE                = "change_app_language";
+    private static final String KEY_CHANGE_FONT_SIZE            = "change_font_size";
+    private static final String KEY_NAVIGATION                  = "change_navigation";
+    private static final String KEY_SHOW_SPLASH_SCREEN          = "show_splash_screen";
+
+    static final String KEY_MAPS                                = "maps";
+
+    private static final String KEY_FORM_UPDATE_MODE            = "form_update_mode";
     private static final String KEY_PERIODIC_FORM_UPDATES_CHECK = "periodic_form_updates_check";
     private static final String KEY_AUTOMATIC_UPDATE            = "automatic_update";
     private static final String KEY_HIDE_OLD_FORM_VERSIONS      = "hide_old_form_versions";
-    private static final String KEY_CHANGE_FONT_SIZE            = "change_font_size";
+    private static final String KEY_AUTOSEND                    = "change_autosend";
+    private static final String KEY_DELETE_AFTER_SEND           = "delete_after_send";
     private static final String KEY_DEFAULT_TO_FINALIZED        = "default_to_finalized";
+    private static final String KEY_CONSTRAINT_BEHAVIOR         = "change_constraint_behavior";
     private static final String KEY_HIGH_RESOLUTION             = "high_resolution";
     private static final String KEY_IMAGE_SIZE                  = "image_size";
     private static final String KEY_GUIDANCE_HINT               = "guidance_hint";
-    private static final String KEY_SHOW_SPLASH_SCREEN          = "show_splash_screen";
-    private static final String KEY_DELETE_AFTER_SEND           = "delete_after_send";
     private static final String KEY_INSTANCE_FORM_SYNC          = "instance_form_sync";
-    private static final String KEY_APP_LANGUAGE                = "change_app_language";
-    private static final String KEY_APP_THEME                   = "change_app_theme";
-
-    private static final String KEY_AUTOSEND                    = "change_autosend";
-
-    private static final String KEY_NAVIGATION                  = "change_navigation";
-    static final String KEY_CONSTRAINT_BEHAVIOR                 = "change_constraint_behavior";
-
-    private static final String KEY_SHOW_MAP_SDK                = "show_map_sdk";
-    private static final String KEY_SHOW_MAP_BASEMAP            = "show_map_basemap";
-
+    private static final String KEY_CHANGE_FORM_METADATA        = "change_form_metadata";
     private static final String KEY_ANALYTICS                   = "analytics";
+
     public static final String KEY_MOVING_BACKWARDS             = "moving_backwards";
+    public static final String KEY_ACCESS_SETTINGS              = "access_settings";
+    public static final String KEY_CHANGE_LANGUAGE              = "change_language";
+    public static final String KEY_JUMP_TO                      = "jump_to";
+    public static final String KEY_SAVE_MID                     = "save_mid";
+    public static final String KEY_SAVE_AS                      = "save_as";
+    public static final String KEY_MARK_AS_FINALIZED            = "mark_as_finalized";
+
+    static final String KEY_CHANGE_ADMIN_PASSWORD               = "admin_password";
+    static final String KEY_IMPORT_SETTINGS                     = "import_settings";
     static final String ALLOW_OTHER_WAYS_OF_EDITING_FORM        = "allow_other_ways_of_editing_form";
 
     /**
@@ -71,11 +69,8 @@ public final class AdminKeys {
      * tuples of admin keys and the keys of general preferences that are removed if the admin
      * preference is false.
      */
-    static AdminAndGeneralKeys[] adminToGeneral = new AdminAndGeneralKeys[] {
-
+    static AdminAndGeneralKeys[] adminToGeneral = {
             ag(KEY_CHANGE_SERVER,              GeneralKeys.KEY_PROTOCOL),
-            ag(KEY_CHANGE_SUBMISSION_TRANSPORT, GeneralKeys.KEY_TRANSPORT_PREFERENCE),
-            ag(KEY_CHANGE_SUBMISSION_TRANSPORT, GeneralKeys.KEY_SMS_PREFERENCE),
             ag(KEY_CHANGE_FORM_METADATA,       GeneralKeys.KEY_FORM_METADATA),
 
             ag(KEY_PERIODIC_FORM_UPDATES_CHECK, GeneralKeys.KEY_PERIODIC_FORM_UPDATES_CHECK),
@@ -98,10 +93,8 @@ public final class AdminKeys {
             ag(KEY_NAVIGATION,                 GeneralKeys.KEY_NAVIGATION),
             ag(KEY_CONSTRAINT_BEHAVIOR,        GeneralKeys.KEY_CONSTRAINT_BEHAVIOR),
 
-            ag(KEY_SHOW_MAP_SDK,               GeneralKeys.KEY_MAP_SDK),
-            ag(KEY_SHOW_MAP_BASEMAP,           GeneralKeys.KEY_MAP_BASEMAP),
-
-            ag(KEY_ANALYTICS,                  GeneralKeys.KEY_ANALYTICS)
+            ag(KEY_ANALYTICS,                  GeneralKeys.KEY_ANALYTICS),
+            ag(KEY_FORM_UPDATE_MODE,           GeneralKeys.KEY_FORM_UPDATE_MODE)
     };
 
     /** Admin keys other than those in adminToGeneral above */
@@ -119,7 +112,10 @@ public final class AdminKeys {
             KEY_MARK_AS_FINALIZED,
             KEY_CHANGE_ADMIN_PASSWORD,
             KEY_MOVING_BACKWARDS,
-            ALLOW_OTHER_WAYS_OF_EDITING_FORM
+            ALLOW_OTHER_WAYS_OF_EDITING_FORM,
+            KEY_MAPS,
+            KEY_QR_CODE_SCANNER,
+            KEY_ADMIN_PW
     );
 
     static Collection<String> serverKeys = Collections.singletonList(
@@ -150,10 +146,22 @@ public final class AdminKeys {
             KEY_APP_LANGUAGE,
             KEY_CHANGE_FONT_SIZE,
             KEY_NAVIGATION,
-            KEY_SHOW_SPLASH_SCREEN,
-            KEY_SHOW_MAP_BASEMAP,
-            KEY_SHOW_MAP_SDK
+            KEY_SHOW_SPLASH_SCREEN
     );
+
+    public static Map<String, Object> getDefaults() {
+        Map<String, Object> defaults = new HashMap<>();
+
+        for (String key : allKeys()) {
+            if (key.equals(KEY_ADMIN_PW)) {
+                defaults.put(key, "");
+            } else {
+                defaults.put(key, true);
+            }
+        }
+
+        return defaults;
+    }
 
     private static Collection<String> allKeys() {
         Collection<String> keys = new ArrayList<>();

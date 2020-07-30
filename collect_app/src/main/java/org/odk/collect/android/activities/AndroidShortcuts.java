@@ -14,7 +14,7 @@
 
 package org.odk.collect.android.activities;
 
-import android.app.AlertDialog;
+import androidx.appcompat.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnCancelListener;
 import android.content.Intent;
@@ -58,8 +58,8 @@ public class AndroidShortcuts extends AppCompatActivity {
      * Builds a list of shortcuts
      */
     private void buildMenuList() {
-        ArrayList<String> names = new ArrayList<String>();
-        ArrayList<Uri> commands = new ArrayList<Uri>();
+        ArrayList<String> names = new ArrayList<>();
+        ArrayList<Uri> commands = new ArrayList<>();
 
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle(R.string.select_odk_shortcut);

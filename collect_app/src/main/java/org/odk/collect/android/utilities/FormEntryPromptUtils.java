@@ -27,7 +27,7 @@ import org.javarosa.core.model.data.MultipleItemsData;
 import org.javarosa.core.model.data.helper.Selection;
 import org.javarosa.form.api.FormEntryPrompt;
 import org.odk.collect.android.dao.ItemsetDao;
-import org.odk.collect.android.logic.FormController;
+import org.odk.collect.android.javarosawrapper.FormController;
 
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
@@ -127,6 +127,6 @@ public class FormEntryPromptUtils {
 
     public static CharSequence getItemText(FormEntryPrompt formEntryPrompt, SelectChoice selectChoice) {
         String choiceName = formEntryPrompt.getSelectChoiceText(selectChoice);
-        return choiceName != null ? TextUtils.textToHtml(choiceName) : "";
+        return choiceName != null ? StringUtils.textToHtml(choiceName) : "";
     }
 }

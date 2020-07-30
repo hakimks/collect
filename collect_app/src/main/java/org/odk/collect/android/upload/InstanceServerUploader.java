@@ -21,10 +21,12 @@ import androidx.annotation.NonNull;
 
 import org.odk.collect.android.R;
 import org.odk.collect.android.application.Collect;
-import org.odk.collect.android.dto.Instance;
-import org.odk.collect.android.http.HttpHeadResult;
-import org.odk.collect.android.http.HttpPostResult;
-import org.odk.collect.android.http.OpenRosaHttpInterface;
+import org.odk.collect.android.instances.Instance;
+import org.odk.collect.android.openrosa.CaseInsensitiveHeaders;
+import org.odk.collect.android.openrosa.HttpHeadResult;
+import org.odk.collect.android.openrosa.HttpPostResult;
+import org.odk.collect.android.openrosa.OpenRosaConstants;
+import org.odk.collect.android.openrosa.OpenRosaHttpInterface;
 import org.odk.collect.android.preferences.GeneralKeys;
 import org.odk.collect.android.utilities.ResponseMessageParser;
 import org.odk.collect.android.utilities.WebCredentialsUtils;
@@ -92,13 +94,13 @@ public class InstanceServerUploader extends InstanceUploader {
             }
 
             HttpHeadResult headResult;
-            Map<String, String> responseHeaders;
+            CaseInsensitiveHeaders responseHeaders;
             try {
                 headResult = httpInterface.executeHeadRequest(uri, webCredentialsUtils.getCredentials(uri));
                 responseHeaders = headResult.getHeaders();
 
-                if (responseHeaders.containsKey("X-OpenRosa-Accept-Content-Length")) {
-                    String contentLengthString = responseHeaders.get("X-OpenRosa-Accept-Content-Length");
+                if (responseHeaders.containsHeader(OpenRosaConstants.ACCEPT_CONTENT_LENGTH_HEADER)) {
+                    String contentLengthString = responseHeaders.getAnyValue(OpenRosaConstants.ACCEPT_CONTENT_LENGTH_HEADER);
                     try {
                         contentLength = Long.parseLong(contentLengthString);
                     } catch (Exception e) {
@@ -118,9 +120,9 @@ public class InstanceServerUploader extends InstanceUploader {
                         submissionUri);
             } else if (headResult.getStatusCode() == HttpsURLConnection.HTTP_NO_CONTENT) {
                 // Redirect header received
-                if (responseHeaders.containsKey("Location")) {
+                if (responseHeaders.containsHeader("Location")) {
                     try {
-                        Uri newURI = Uri.parse(URLDecoder.decode(responseHeaders.get("Location"), "utf-8"));
+                        Uri newURI = Uri.parse(URLDecoder.decode(responseHeaders.getAnyValue("Location"), "utf-8"));
                         // Allow redirects within same host. This could be redirecting to HTTPS.
                         if (submissionUri.getHost().equalsIgnoreCase(newURI.getHost())) {
                             // Re-add params if server didn't respond with params
@@ -160,7 +162,7 @@ public class InstanceServerUploader extends InstanceUploader {
         // submission files on disk.  In this case, upload the submission.xml and all the files in
         // the directory. This means the plaintext files and the encrypted files will be sent to the
         // server and the server will have to figure out what to do with them.
-        File instanceFile = new File(instance.getInstanceFilePath());
+        File instanceFile = new File(instance.getAbsoluteInstanceFilePath());
         File submissionFile = new File(instanceFile.getParentFile(), "submission.xml");
         if (submissionFile.exists()) {
             Timber.w("submission.xml will be uploaded instead of %s", instanceFile.getAbsolutePath());
@@ -202,9 +204,11 @@ public class InstanceServerUploader extends InstanceUploader {
                 } else {
                     if (messageParser.isValid()) {
                         exception = new UploadException(FAIL + messageParser.getMessageResponse());
+                    } else if (responseCode == HttpsURLConnection.HTTP_BAD_REQUEST) {
+                        Timber.w(FAIL + postResult.getReasonPhrase() + " (" + responseCode + ") at " + urlString);
+                        exception = new UploadException("Failed to upload. Please make sure the form is configured to accept submissions on the server");
                     } else {
-                        exception = new UploadException(FAIL + postResult.getReasonPhrase()
-                                + " (" + responseCode + ") at " + urlString);
+                        exception = new UploadException(FAIL + postResult.getReasonPhrase() + " (" + responseCode + ") at " + urlString);
                     }
 
                 }
@@ -259,7 +263,7 @@ public class InstanceServerUploader extends InstanceUploader {
      *
      * If the upload was triggered by an external app and specified an override URL, use that one.
      * Otherwise, use the submission URL configured in the form
-     * (https://opendatakit.github.io/xforms-spec/#submission-attributes). Finally, default to the
+     * (https://getodk.github.io/xforms-spec/#submission-attributes). Finally, default to the
      * URL configured at the app level.
      */
     @Override

@@ -37,7 +37,7 @@ public class LocaleHelper {
         return updateResourcesLegacy(context, language);
     }
 
-    private String getLocaleCode(Context context) {
+    public static String getLocaleCode(Context context) {
         String localeCode = PreferenceManager.getDefaultSharedPreferences(context)
                 .getString(GeneralKeys.KEY_APP_LANGUAGE, "");
         boolean isUsingSysLanguage = localeCode.equals("");
@@ -68,9 +68,7 @@ public class LocaleHelper {
 
         Configuration configuration = resources.getConfiguration();
         configuration.locale = locale;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-            configuration.setLayoutDirection(locale);
-        }
+        configuration.setLayoutDirection(locale);
 
         resources.updateConfiguration(configuration, resources.getDisplayMetrics());
 

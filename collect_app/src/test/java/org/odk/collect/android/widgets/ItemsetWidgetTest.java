@@ -1,7 +1,9 @@
 package org.odk.collect.android.widgets;
 
 import android.database.Cursor;
+
 import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.RecyclerView;
 
 import net.bytebuddy.utility.RandomString;
 
@@ -20,6 +22,8 @@ import org.mockito.Mock;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.odk.collect.android.database.ItemsetDbAdapter;
+import org.odk.collect.android.formentry.questions.AudioVideoImageTextLabel;
+import org.odk.collect.android.formentry.questions.QuestionDetails;
 import org.odk.collect.android.utilities.FileUtil;
 import org.odk.collect.android.utilities.XPathParseTool;
 import org.odk.collect.android.widgets.base.QuestionWidgetTest;
@@ -28,12 +32,15 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
+import static org.odk.collect.android.support.RobolectricHelpers.populateRecyclerView;
 
 /**
  * @author James Knight
@@ -90,7 +97,7 @@ public class ItemsetWidgetTest extends QuestionWidgetTest<ItemsetWidget, StringD
     @NonNull
     @Override
     public ItemsetWidget createWidget() {
-        return new ItemsetWidget(activity, formEntryPrompt,
+        return new ItemsetWidget(activity, new QuestionDetails(formEntryPrompt, "formAnalyticsID"),
                 false, parseTool, adapter, fileUtil);
     }
 
@@ -144,7 +151,7 @@ public class ItemsetWidgetTest extends QuestionWidgetTest<ItemsetWidget, StringD
 
     @Test
     public void getAnswerShouldReflectWhichSelectionWasMade() {
-        ItemsetWidget widget = getWidget();
+        ItemsetWidget widget = getSpyWidget();
         assertNull(widget.getAnswer());
 
         int randomIndex = Math.abs(random.nextInt()) % widget.getChoiceCount();
@@ -154,6 +161,15 @@ public class ItemsetWidgetTest extends QuestionWidgetTest<ItemsetWidget, StringD
 
         StringData answer = (StringData) widget.getAnswer();
         assertEquals(answer.getDisplayText(), selectedChoice);
+    }
+
+    @Test
+    public void usingReadOnlyOptionShouldMakeAllClickableElementsDisabled() {
+        when(formEntryPrompt.isReadOnly()).thenReturn(true);
+        populateRecyclerView(getWidget());
+
+        AudioVideoImageTextLabel avitLabel = (AudioVideoImageTextLabel) (((RecyclerView) getSpyWidget().answerLayout.getChildAt(0)).getLayoutManager().getChildAt(0));
+        assertThat(avitLabel.isEnabled(), is(Boolean.FALSE));
     }
 
     private Map<String, String> createChoices() {

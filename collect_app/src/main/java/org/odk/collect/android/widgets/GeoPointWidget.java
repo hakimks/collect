@@ -16,155 +16,75 @@ package org.odk.collect.android.widgets;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.app.ActivityManager;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
-import android.content.pm.ConfigurationInfo;
-import android.preference.PreferenceManager;
+import android.util.TypedValue;
 import android.view.View;
-import android.widget.Button;
-import android.widget.LinearLayout;
-import android.widget.TextView;
 
+import org.javarosa.core.model.QuestionDef;
 import org.javarosa.core.model.data.GeoPointData;
 import org.javarosa.core.model.data.IAnswerData;
 import org.javarosa.form.api.FormEntryPrompt;
 import org.odk.collect.android.R;
 import org.odk.collect.android.activities.GeoPointActivity;
-import org.odk.collect.android.activities.GeoPointMapActivity;
+import org.odk.collect.android.databinding.GeoWidgetAnswerBinding;
+import org.odk.collect.android.formentry.questions.QuestionDetails;
 import org.odk.collect.android.listeners.PermissionListener;
-import org.odk.collect.android.preferences.GeneralKeys;
-import org.odk.collect.android.utilities.PlayServicesUtil;
-import org.odk.collect.android.utilities.WidgetAppearanceUtils;
-import org.odk.collect.android.widgets.interfaces.BinaryWidget;
-
-import java.text.DecimalFormat;
-import java.util.Locale;
+import org.odk.collect.android.utilities.MultiClickGuard;
+import org.odk.collect.android.widgets.interfaces.BinaryDataReceiver;
+import org.odk.collect.android.widgets.utilities.GeoWidgetUtils;
+import org.odk.collect.android.widgets.utilities.WaitingForDataRegistry;
 
 import static org.odk.collect.android.utilities.ApplicationConstants.RequestCodes;
+import static org.odk.collect.android.widgets.GeoPointMapWidget.ACCURACY_THRESHOLD;
+import static org.odk.collect.android.widgets.GeoPointMapWidget.DEFAULT_LOCATION_ACCURACY;
+import static org.odk.collect.android.widgets.GeoPointMapWidget.LOCATION;
 
-/**
- * GeoPointWidget is the widget that allows the user to get GPS readings.
- *
- * @author Carl Hartung (carlhartung@gmail.com)
- * @author Yaw Anokwa (yanokwa@gmail.com)
- * @author Jon Nordling (jonnordling@gmail.com)
- */
 @SuppressLint("ViewConstructor")
-public class GeoPointWidget extends QuestionWidget implements BinaryWidget {
-    public static final String LOCATION = "gp";
-    public static final String ACCURACY_THRESHOLD = "accuracyThreshold";
-    public static final String READ_ONLY = "readOnly";
-    public static final String DRAGGABLE_ONLY = "draggable";
+public class GeoPointWidget extends QuestionWidget implements BinaryDataReceiver {
 
-    public static final double DEFAULT_LOCATION_ACCURACY = 5.0;
-    private final boolean readOnly;
-    private final boolean useMapsV2;
-    private final Button getLocationButton;
-    private final Button viewButton;
-    private final TextView answerDisplay;
-    private boolean useMaps;
-    private double accuracyThreshold;
-    private boolean draggable = true;
+    private final WaitingForDataRegistry waitingForDataRegistry;
+    private final double accuracyThreshold;
 
+    GeoWidgetAnswerBinding binding;
+
+    private boolean readOnly;
     private String stringAnswer;
 
-    public GeoPointWidget(Context context, FormEntryPrompt prompt) {
-        super(context, prompt);
+    public GeoPointWidget(Context context, QuestionDetails questionDetails, QuestionDef questionDef, WaitingForDataRegistry waitingForDataRegistry) {
+        super(context, questionDetails);
+        this.waitingForDataRegistry = waitingForDataRegistry;
 
-        // Determine the activity threshold to use
-        String acc = prompt.getQuestion().getAdditionalAttribute(null, ACCURACY_THRESHOLD);
-        if (acc != null && acc.length() != 0) {
-            accuracyThreshold = Double.parseDouble(acc);
-        } else {
-            accuracyThreshold = DEFAULT_LOCATION_ACCURACY;
-        }
+        // Determine the accuracy threshold to use.
+        String acc = questionDef.getAdditionalAttribute(null, ACCURACY_THRESHOLD);
+        accuracyThreshold = acc != null && !acc.isEmpty() ? Double.parseDouble(acc) : DEFAULT_LOCATION_ACCURACY;
 
-        // Determine whether or not to use the plain, maps, or mapsV2 activity
-        String appearance = prompt.getAppearanceHint();
-
-        // use mapsV2 if it is available and was requested;
-        useMapsV2 = useMapsV2(context);
-        if (appearance != null && appearance.toLowerCase(Locale.US).contains(WidgetAppearanceUtils.PLACEMENT_MAP) && useMapsV2) {
-            draggable = true;
-            useMaps = true;
-        } else if (appearance != null && appearance.toLowerCase(Locale.US).contains(WidgetAppearanceUtils.MAPS) && useMapsV2) {
-            draggable = false;
-            useMaps = true;
-        } else {
-            useMaps = false;
-        }
-
-        readOnly = prompt.isReadOnly();
-
-        answerDisplay = getCenteredAnswerTextView();
-
-        viewButton = getSimpleButton(getContext().getString(R.string.get_point), R.id.get_point);
-
-        getLocationButton = getSimpleButton(R.id.get_location);
-
-        // finish complex layout
-        // control what gets shown with setVisibility(View.GONE)
-        LinearLayout answerLayout = new LinearLayout(getContext());
-        answerLayout.setOrientation(LinearLayout.VERTICAL);
-        answerLayout.addView(getLocationButton);
-        answerLayout.addView(viewButton);
-        answerLayout.addView(answerDisplay);
-        addAnswerView(answerLayout);
-
-        // Set vars Label/text for button enable view or collect...
+        stringAnswer = getFormEntryPrompt().getAnswerText();
         boolean dataAvailable = false;
-        String s = prompt.getAnswerText();
-        if (s != null && !s.equals("")) {
+        if (stringAnswer != null && !stringAnswer.isEmpty()) {
             dataAvailable = true;
-            setBinaryData(s);
+            setBinaryData(stringAnswer);
         }
         updateButtonLabelsAndVisibility(dataAvailable);
-
-    }
-
-    private void updateButtonLabelsAndVisibility(boolean dataAvailable) {
-        // BUT for mapsV2, we only show the getLocationButton, altering its text.
-        // for maps, we show the view button.
-
-        if (useMapsV2 && useMaps) {
-            // hide the view button
-            viewButton.setVisibility(View.GONE);
-            if (readOnly) {
-                //READ_ONLY View
-                getLocationButton.setText(
-                        getContext().getString(R.string.geopoint_view_read_only));
-            } else {
-                if (stringAnswer != null && !stringAnswer.isEmpty()) {
-                    getLocationButton.setText(
-                            getContext().getString(R.string.view_change_location));
-                } else {
-                    getLocationButton.setText(getContext().getString(R.string.get_point));
-                }
-            }
-        } else {
-            if (!readOnly) {
-                getLocationButton.setText(getContext().getString(
-                        dataAvailable ? R.string.change_location : R.string.get_point));
-            }
-
-            if (useMaps) {
-                // show the view button
-                viewButton.setVisibility(View.VISIBLE);
-                viewButton.setEnabled(dataAvailable);
-            } else {
-                viewButton.setVisibility(View.GONE);
-            }
-        }
     }
 
     @Override
-    public void clearAnswer() {
-        stringAnswer = null;
-        answerDisplay.setText(null);
-        updateButtonLabelsAndVisibility(false);
-        widgetValueChanged();
+    protected View onCreateAnswerView(Context context, FormEntryPrompt prompt, int answerFontSize) {
+        binding = GeoWidgetAnswerBinding.inflate(((Activity) context).getLayoutInflater());
+        View answerView = binding.getRoot();
+
+        binding.geoAnswerText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, answerFontSize);
+
+        readOnly = prompt.isReadOnly();
+        if (readOnly) {
+            binding.simpleButton.setVisibility(GONE);
+        } else {
+            binding.simpleButton.setText(getDefaultButtonLabel());
+            binding.simpleButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, answerFontSize);
+
+            binding.simpleButton.setOnClickListener(v -> onButtonClick());
+        }
+        return answerView;
     }
 
     @Override
@@ -172,147 +92,98 @@ public class GeoPointWidget extends QuestionWidget implements BinaryWidget {
         if (stringAnswer == null || stringAnswer.isEmpty()) {
             return null;
         } else {
-            try {
-                // segment lat and lon
-                String[] sa = stringAnswer.split(" ");
-                double[] gp = new double[4];
-                gp[0] = Double.valueOf(sa[0]);
-                gp[1] = Double.valueOf(sa[1]);
-                gp[2] = Double.valueOf(sa[2]);
-                gp[3] = Double.valueOf(sa[3]);
-
-                return new GeoPointData(gp);
-
-            } catch (Exception numberFormatException) {
-                return null;
-            }
+            return new GeoPointData(GeoWidgetUtils.getLocationParamsFromStringAnswer(stringAnswer));
         }
-    }
-
-    private String truncateDouble(String s) {
-        DecimalFormat df = new DecimalFormat("#.##");
-        return df.format(Double.valueOf(s));
-    }
-
-    private String formatGps(double coordinates, String type) {
-        String location = Double.toString(coordinates);
-        String degreeSign = "°";
-        String degree = location.substring(0, location.indexOf('.'))
-                + degreeSign;
-        location = "0." + location.substring(location.indexOf('.') + 1);
-        double temp = Double.valueOf(location) * 60;
-        location = Double.toString(temp);
-        String mins = location.substring(0, location.indexOf('.')) + "'";
-
-        location = "0." + location.substring(location.indexOf('.') + 1);
-        temp = Double.valueOf(location) * 60;
-        location = Double.toString(temp);
-        String secs = location.substring(0, location.indexOf('.')) + '"';
-        if (type.equalsIgnoreCase("lon")) {
-            if (degree.startsWith("-")) {
-                degree = String.format(getContext()
-                        .getString(R.string.west), degree.replace("-", ""), mins, secs);
-            } else {
-                degree = String.format(getContext()
-                        .getString(R.string.east), degree.replace("-", ""), mins, secs);
-            }
-        } else {
-            if (degree.startsWith("-")) {
-                degree = String.format(getContext()
-                        .getString(R.string.south), degree.replace("-", ""), mins, secs);
-            } else {
-                degree = String.format(getContext()
-                        .getString(R.string.north), degree.replace("-", ""), mins, secs);
-            }
-        }
-        return degree;
     }
 
     @Override
-    public void setBinaryData(Object answer) {
-        String s = (String) answer;
-
-        if (s != null && !s.isEmpty()) {
-            stringAnswer = s;
-            String[] sa = s.split(" ");
-            answerDisplay.setText(String.format(getContext().getString(R.string.gps_result),
-                    formatGps(Double.parseDouble(sa[0]), "lat"),
-                    formatGps(Double.parseDouble(sa[1]), "lon"), truncateDouble(sa[2]),
-                    truncateDouble(sa[3])));
-        } else {
-            stringAnswer = s;
-            answerDisplay.setText("");
-        }
-
-        updateButtonLabelsAndVisibility(true);
+    public void clearAnswer() {
+        stringAnswer = null;
+        binding.geoAnswerText.setText(null);
+        updateButtonLabelsAndVisibility(false);
         widgetValueChanged();
     }
 
     @Override
     public void setOnLongClickListener(OnLongClickListener l) {
-        viewButton.setOnLongClickListener(l);
-        getLocationButton.setOnLongClickListener(l);
-        answerDisplay.setOnLongClickListener(l);
+        binding.simpleButton.setOnLongClickListener(l);
+        binding.geoAnswerText.setOnLongClickListener(l);
     }
 
     @Override
     public void cancelLongPress() {
         super.cancelLongPress();
-        viewButton.cancelLongPress();
-        getLocationButton.cancelLongPress();
-        answerDisplay.cancelLongPress();
-    }
-
-    private boolean useMapsV2(final Context context) {
-        final ActivityManager activityManager = (ActivityManager) context.getSystemService(
-                Context.ACTIVITY_SERVICE);
-        final ConfigurationInfo configurationInfo =
-                activityManager.getDeviceConfigurationInfo();
-        return configurationInfo.reqGlEsVersion >= 0x20000;
+        binding.simpleButton.cancelLongPress();
+        binding.geoAnswerText.cancelLongPress();
     }
 
     @Override
-    public void onButtonClick(int buttonId) {
-        getPermissionUtils().requestLocationPermissions((Activity) getContext(), new PermissionListener() {
-            @Override
-            public void granted() {
-                startGeoPoint();
-            }
+    public void setBinaryData(Object answer) {
+        stringAnswer = (String) answer;
+        binding.geoAnswerText.setText(getAnswerToDisplay(stringAnswer));
 
-            @Override
-            public void denied() {
-            }
-        });
+        if (binding.geoAnswerText.getText().toString().equals("")) {
+            stringAnswer = "";
+        }
+
+        updateButtonLabelsAndVisibility(stringAnswer != null);
+        widgetValueChanged();
     }
 
-    private void startGeoPoint() {
-        Activity activity = (Activity) getContext();
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(activity);
-        String mapSDK = prefs.getString(GeneralKeys.KEY_MAP_SDK, GeneralKeys.DEFAULT_BASEMAP_KEY);
-        if (mapSDK.equals(GeneralKeys.GOOGLE_MAPS_BASEMAP_KEY) &&
-            !PlayServicesUtil.isGooglePlayServicesAvailable(activity)) {
-            PlayServicesUtil.showGooglePlayServicesAvailabilityErrorDialog(activity);
-            return;
+    private String getAnswerToDisplay(String answer) {
+        try {
+            if (answer != null && !answer.isEmpty()) {
+                String[] parts = answer.split(" ");
+                return getContext().getString(
+                        R.string.gps_result,
+                        GeoWidgetUtils.convertCoordinatesIntoDegreeFormat(getContext(), Double.parseDouble(parts[0]), "lat"),
+                        GeoWidgetUtils.convertCoordinatesIntoDegreeFormat(getContext(), Double.parseDouble(parts[1]), "lon"),
+                        GeoWidgetUtils.truncateDouble(parts[2]),
+                        GeoWidgetUtils.truncateDouble(parts[3])
+                );
+            }
+        } catch (NumberFormatException e) {
+            return "";
         }
-        Intent intent = (useMapsV2 && useMaps) ?
-            new Intent(activity, GeoPointMapActivity.class)
-                .putExtra(GeneralKeys.KEY_MAP_SDK, mapSDK) :
-            new Intent(activity, GeoPointActivity.class);
+        return "";
+    }
+
+    private void updateButtonLabelsAndVisibility(boolean dataAvailable) {
+        if (!readOnly) {
+            binding.simpleButton.setText(
+                    dataAvailable ? R.string.change_location : R.string.get_point);
+        }
+    }
+
+    private void onButtonClick() {
+        if (MultiClickGuard.allowClick(QuestionWidget.class.getName())) {
+            getPermissionUtils().requestLocationPermissions((Activity) getContext(), new PermissionListener() {
+                @Override
+                public void granted() {
+                    waitingForDataRegistry.waitForData(getFormEntryPrompt().getIndex());
+                    startGeoActivity();
+                }
+
+                @Override
+                public void denied() {
+                }
+            });
+        }
+    }
+
+    private void startGeoActivity() {
+        Context context = getContext();
+        Intent intent = new Intent(context, GeoPointActivity.class);
 
         if (stringAnswer != null && !stringAnswer.isEmpty()) {
-            String[] sa = stringAnswer.split(" ");
-            double[] gp = new double[4];
-            gp[0] = Double.valueOf(sa[0]);
-            gp[1] = Double.valueOf(sa[1]);
-            gp[2] = Double.valueOf(sa[2]);
-            gp[3] = Double.valueOf(sa[3]);
-            intent.putExtra(LOCATION, gp);
+            intent.putExtra(LOCATION, GeoWidgetUtils.getLocationParamsFromStringAnswer(stringAnswer));
         }
-        intent.putExtra(READ_ONLY, readOnly);
-        intent.putExtra(DRAGGABLE_ONLY, draggable);
         intent.putExtra(ACCURACY_THRESHOLD, accuracyThreshold);
 
-        waitForData();
-        activity.startActivityForResult(intent, RequestCodes.LOCATION_CAPTURE);
+        ((Activity) context).startActivityForResult(intent, RequestCodes.LOCATION_CAPTURE);
+    }
+
+    private String getDefaultButtonLabel() {
+        return getContext().getString(R.string.get_location);
     }
 }

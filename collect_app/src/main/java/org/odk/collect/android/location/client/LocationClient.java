@@ -1,16 +1,17 @@
 package org.odk.collect.android.location.client;
 
 import android.location.Location;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 /**
  * An interface for classes that allow monitoring and retrieving the User's Location.
  * Currently there are only two implementations:
- * - {@link GoogleLocationClient}: A LocationClient using Google Play Services.
+ * - {@link GoogleFusedLocationClient}: A LocationClient using Google Play Services.
  * - {@link AndroidLocationClient}: A LocationClient using Android's existing Location Services.
  */
 public interface LocationClient {
@@ -45,7 +46,8 @@ public interface LocationClient {
 
     /**
      * Sets the {@link LocationClientListener} which will receive status updates
-     * for the LocationClient.
+     * for the LocationClient.  The LocationClient should hold only a WeakReference
+     * to the listener so that it does not cause a memory leak.
      *
      * @param locationClientListener The new {@link LocationClientListener}.
      */
@@ -88,7 +90,7 @@ public interface LocationClient {
 
     /**
      * Provides a way to tell if the underlying LocationClient allows the updateInterval to be set.
-     * Currently only the GoogleLocationClient can handle updateInterval changes.
+     * Currently only the GoogleFusedLocationClient can handle updateInterval changes.
      *
      * @return Whether or the LocationClient's updateInterval can be set.
      */

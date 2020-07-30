@@ -16,20 +16,25 @@ package org.odk.collect.android.utilities;
 
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.content.pm.ResolveInfo;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
-import android.os.Build;
+import android.os.Environment;
 
 import org.apache.commons.io.IOUtils;
-import org.javarosa.xform.parse.XFormParser;
-import org.kxml2.kdom.Document;
-import org.kxml2.kdom.Element;
-import org.kxml2.kdom.Node;
+import org.javarosa.core.model.Constants;
+import org.javarosa.core.model.FormDef;
+import org.javarosa.core.model.GroupDef;
+import org.javarosa.core.model.IFormElement;
+import org.javarosa.core.model.QuestionDef;
+import org.javarosa.core.model.actions.setgeopoint.SetGeopointActionHandler;
+import org.javarosa.core.model.instance.FormInstance;
+import org.javarosa.core.model.instance.TreeElement;
+import org.javarosa.core.model.instance.TreeReference;
+import org.javarosa.xform.util.XFormUtils;
 import org.odk.collect.android.R;
 import org.odk.collect.android.application.Collect;
+import org.odk.collect.android.storage.StorageStateProvider;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -37,8 +42,6 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.net.FileNameMap;
 import java.net.URLConnection;
@@ -46,10 +49,17 @@ import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.NoSuchElementException;
+import java.util.Set;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import timber.log.Timber;
 
 /**
@@ -68,15 +78,22 @@ public class FileUtils {
     public static final String BASE64_RSA_PUBLIC_KEY = "base64RsaPublicKey";
     public static final String AUTO_DELETE = "autoDelete";
     public static final String AUTO_SEND = "autoSend";
+    public static final String GEOMETRY_XPATH = "geometryXpath";
 
     /** Suffix for the form media directory. */
-    private static final String MEDIA_SUFFIX = "-media";
+    public static final String MEDIA_SUFFIX = "-media";
 
     /** Filename of the last-saved instance data. */
     public static final String LAST_SAVED_FILENAME = "last-saved.xml";
 
     /** Valid XML stub that can be parsed without error. */
-    private static final String STUB_XML = "<?xml version='1.0' ?><stub />";
+    public static final String STUB_XML = "<?xml version='1.0' ?><stub />";
+
+    /** True if we have checked whether /sdcard points to getExternalStorageDirectory(). */
+    private static boolean isSdcardSymlinkChecked;
+
+    /** The result of checking whether /sdcard points to getExternalStorageDirectory(). */
+    private static boolean isSdcardSymlinkSameAsExternalStorageDirectory;
 
     static int bufSize = 16 * 1024; // May be set by unit test
 
@@ -249,111 +266,121 @@ public class FileUtils {
         }
     }
 
-    public static HashMap<String, String> parseXML(File xmlFile) {
-        final HashMap<String, String> fields = new HashMap<String, String>();
-        final InputStream is;
-        try {
-            is = new FileInputStream(xmlFile);
-        } catch (FileNotFoundException e1) {
-            Timber.d(e1);
-            throw new IllegalStateException(e1);
-        }
+    /**
+     * Given a form definition file, return a map containing form metadata. The form ID is required
+     * by the specification and will always be included. Title and version are optionally included.
+     * If the form definition contains a submission block, any or all of submission URI, base 64 RSA
+     * public key, auto-delete and auto-send may be included.
+     */
+    public static HashMap<String, String> getMetadataFromFormDefinition(File formDefinitionXml) {
+        FormDef formDef = XFormUtils.getFormFromFormXml(formDefinitionXml.getAbsolutePath(), "jr://file/" + LAST_SAVED_FILENAME);
 
-        InputStreamReader isr;
-        try {
-            isr = new InputStreamReader(is, "UTF-8");
-        } catch (UnsupportedEncodingException uee) {
-            Timber.w(uee, "Trying default encoding as UTF 8 encoding unavailable");
-            isr = new InputStreamReader(is);
-        }
+        final HashMap<String, String> fields = new HashMap<>();
 
-        final Document doc;
-        try {
-            doc = XFormParser.getXMLDocument(isr);
-        } catch (IOException e) {
-            Timber.e(e, "Unable to parse XML document %s", xmlFile.getAbsolutePath());
-            throw new IllegalStateException("Unable to parse XML document", e);
-        } finally {
-            try {
-                isr.close();
-            } catch (IOException e) {
-                Timber.w("%s error closing from reader", xmlFile.getAbsolutePath());
-            }
-        }
+        fields.put(TITLE, formDef.getTitle());
+        fields.put(FORMID, formDef.getMainInstance().getRoot().getAttributeValue(null, "id"));
+        fields.put(VERSION, formDef.getMainInstance().getRoot().getAttributeValue(null, "version"));
 
-        final String xforms = "http://www.w3.org/2002/xforms";
-        final String html = doc.getRootElement().getNamespace();
+        if (formDef.getSubmissionProfile() != null) {
+            fields.put(SUBMISSIONURI, formDef.getSubmissionProfile().getAction());
 
-        final Element head = doc.getRootElement().getElement(html, "head");
-        final Element title = head.getElement(html, "title");
-        if (title != null) {
-            fields.put(TITLE, XFormParser.getXMLText(title, true));
-        }
-
-        final Element model = getChildElement(head, "model");
-        Element cur = getChildElement(model, "instance");
-
-        final int idx = cur.getChildCount();
-        int i;
-        for (i = 0; i < idx; ++i) {
-            if (cur.isText(i)) {
-                continue;
-            }
-            if (cur.getType(i) == Node.ELEMENT) {
-                break;
-            }
-        }
-
-        if (i < idx) {
-            cur = cur.getElement(i); // this is the first data element
-            final String id = cur.getAttributeValue(null, "id");
-
-            final String version = cur.getAttributeValue(null, "version");
-            final String uiVersion = cur.getAttributeValue(null, "uiVersion");
-            if (uiVersion != null) {
-                // pre-OpenRosa 1.0 variant of spec
-                Timber.e("Obsolete use of uiVersion -- IGNORED -- only using version: %s",
-                        version);
+            final String key = formDef.getSubmissionProfile().getAttribute("base64RsaPublicKey");
+            if (key != null && key.trim().length() > 0) {
+                fields.put(BASE64_RSA_PUBLIC_KEY, key.trim());
             }
 
-            fields.put(FORMID, (id == null) ? cur.getNamespace() : id);
-            fields.put(VERSION, (version == null) ? null : version);
-        } else {
-            throw new IllegalStateException(xmlFile.getAbsolutePath() + " could not be parsed");
-        }
-        try {
-            final Element submission = model.getElement(xforms, "submission");
-            final String base64RsaPublicKey = submission.getAttributeValue(null, "base64RsaPublicKey");
-            final String autoDelete = submission.getAttributeValue(null, "auto-delete");
-            final String autoSend = submission.getAttributeValue(null, "auto-send");
-
-            fields.put(SUBMISSIONURI, submission.getAttributeValue(null, "action"));
-            fields.put(BASE64_RSA_PUBLIC_KEY,
-                    (base64RsaPublicKey == null || base64RsaPublicKey.trim().length() == 0)
-                            ? null : base64RsaPublicKey.trim());
-            fields.put(AUTO_DELETE, autoDelete);
-            fields.put(AUTO_SEND, autoSend);
-        } catch (Exception e) {
-            Timber.i("XML file %s does not have a submission element", xmlFile.getAbsolutePath());
-            // and that's totally fine.
+            fields.put(AUTO_DELETE, formDef.getSubmissionProfile().getAttribute("auto-delete"));
+            fields.put(AUTO_SEND, formDef.getSubmissionProfile().getAttribute("auto-send"));
         }
 
+        fields.put(GEOMETRY_XPATH, getOverallFirstGeoPoint(formDef));
         return fields;
     }
 
-    // needed because element.getelement fails when there are attributes
-    private static Element getChildElement(Element parent, String childName) {
-        Element e = null;
-        int c = parent.getChildCount();
-        int i = 0;
-        for (i = 0; i < c; i++) {
-            if (parent.getType(i) == Node.ELEMENT) {
-                if (parent.getElement(i).getName().equalsIgnoreCase(childName)) {
-                    return parent.getElement(i);
+    /**
+     * Returns an XPath path representing the first geopoint of this form definition or null if the
+     * definition does not contain any field of type geopoint.
+     *
+     * The first geopoint is either of:
+     *      (1) the first geopoint in the body that is not in a repeat
+     *      (2) if the form has a setgeopoint action, the first geopoint in the instance that occurs
+     *          before (1) or (1) if there is no geopoint defined before it in the instance.
+     */
+    private static String getOverallFirstGeoPoint(FormDef formDef) {
+        TreeReference firstTopLevelBodyGeoPoint = getFirstToplevelBodyGeoPoint(formDef);
+
+        if (!formDef.hasAction(SetGeopointActionHandler.ELEMENT_NAME)) {
+            return firstTopLevelBodyGeoPoint == null ? null : firstTopLevelBodyGeoPoint.toString(false);
+        } else {
+            return getInstanceGeoPointBefore(firstTopLevelBodyGeoPoint, formDef.getMainInstance().getRoot());
+        }
+    }
+
+    /**
+     * Returns the reference of the first geopoint in the body that is not in a repeat.
+     */
+    private static TreeReference getFirstToplevelBodyGeoPoint(FormDef formDef) {
+        if (formDef.getChildren().size() == 0) {
+            return null;
+        } else {
+            return getFirstTopLevelBodyGeoPoint(formDef, formDef.getMainInstance());
+        }
+    }
+
+    /**
+     * Returns the reference of the first child of the given element that is of type geopoint and
+     * is not contained in a repeat.
+     */
+    private static TreeReference getFirstTopLevelBodyGeoPoint(IFormElement element, FormInstance primaryInstance) {
+        if (element instanceof QuestionDef) {
+            QuestionDef question = (QuestionDef) element;
+            int dataType = primaryInstance.resolveReference((TreeReference) element.getBind().getReference()).getDataType();
+
+            if (dataType == Constants.DATATYPE_GEOPOINT) {
+                return (TreeReference) question.getBind().getReference();
+            }
+        } else if (element instanceof FormDef || element instanceof GroupDef) {
+            if (element instanceof GroupDef && ((GroupDef) element).getRepeat()) {
+                return null;
+            } else {
+                for (IFormElement child : element.getChildren()) {
+                    // perform recursive depth-first search
+                    TreeReference geoRef = getFirstTopLevelBodyGeoPoint(child, primaryInstance);
+                    if (geoRef != null) {
+                        return geoRef;
+                    }
                 }
             }
         }
-        return e;
+
+        return null;
+    }
+
+    /**
+     * Returns the XPath path for the first geopoint in the primary instance that is before the given
+     * reference and not in a repeat.
+     */
+    private static String getInstanceGeoPointBefore(TreeReference firstBodyGeoPoint, TreeElement element) {
+        if (element.getRef().equals(firstBodyGeoPoint)) {
+            return null;
+        } else if (element.getDataType() == Constants.DATATYPE_GEOPOINT) {
+            return element.getRef().toString(false);
+        } else if (element.hasChildren()) {
+            Set<TreeElement> childrenToAvoid = new HashSet<>();
+
+            for (int i = 0; i < element.getNumChildren(); i++) {
+                if (element.getChildAt(i).getMultiplicity() == TreeReference.INDEX_TEMPLATE) {
+                    childrenToAvoid.addAll(element.getChildrenWithName(element.getChildAt(i).getName()));
+                } else if (!childrenToAvoid.contains(element.getChildAt(i))) {
+                    String geoPath = getInstanceGeoPointBefore(firstBodyGeoPoint, element.getChildAt(i));
+                    if (geoPath != null) {
+                        return geoPath;
+                    }
+                }
+            }
+        }
+
+        return null;
     }
 
     public static void deleteAndReport(File file) {
@@ -488,6 +515,7 @@ public class FileUtils {
         if (newOptions.inSampleSize <= 0) {
             newOptions.inSampleSize = 1;
         }
+
         Bitmap bitmap;
         try {
             bitmap = BitmapFactory.decodeFile(path, originalOptions);
@@ -522,6 +550,19 @@ public class FileUtils {
         }
     }
 
+    /** Sorts file paths as if sorting the path components and extensions lexicographically. */
+    public static int comparePaths(String a, String b) {
+        // Regular string compareTo() is incorrect, because it will sort "/" and "."
+        // after other punctuation (e.g. "foo/bar" will sort AFTER "foo-2/bar" and
+        // "pic.jpg" will sort AFTER "pic-2.jpg").  Replacing these delimiters with
+        // '\u0000' and '\u0001' causes paths to sort correctly (assuming the paths
+        // don't already contain '\u0000' or '\u0001').  This is a bit of a hack,
+        // but it's a lot simpler and faster than comparing components one by one.
+        String sortKeyA = a.replace('/', '\u0000').replace('.', '\u0001');
+        String sortKeyB = b.replace('/', '\u0000').replace('.', '\u0001');
+        return sortKeyA.compareTo(sortKeyB);
+    }
+
     public static String getFileExtension(String fileName) {
         int dotIndex = fileName.lastIndexOf('.');
         if (dotIndex == -1) {
@@ -530,34 +571,9 @@ public class FileUtils {
         return fileName.substring(dotIndex + 1).toLowerCase(Locale.ROOT);
     }
 
-    /**
-     * Grants read and write permissions to a content URI added to the specified intent.
-     *
-     * For Android > 4.4, the permissions expire when the receiving app's stack is finished. For
-     * Android <= 4.4, the permissions are granted to all applications that can respond to the
-     * intent.
-     *
-     * For true security, the permissions for Android <= 4.4 should be revoked manually but we don't
-     * revoke them because we don't have many users on lower API levels and prior to targeting API
-     * 24+, all apps always had access to the files anyway.
-     */
     public static void grantFilePermissions(Intent intent, Uri uri, Context context) {
         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
         intent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-
-        // The preferred flag-based strategy does not work with all intent types for Android <= 4.4
-        // bug report: https://issuetracker.google.com/issues/37005552
-        // workaround: https://stackoverflow.com/a/18332000/137744
-        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.KITKAT) {
-            List<ResolveInfo> resInfoList = context.getPackageManager()
-                    .queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY);
-
-            for (ResolveInfo resolveInfo : resInfoList) {
-                String packageName = resolveInfo.activityInfo.packageName;
-                context.grantUriPermission(packageName, uri,
-                        Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-            }
-        }
     }
 
     /**
@@ -567,18 +583,106 @@ public class FileUtils {
      */
     public static void grantFileReadPermissions(Intent intent, Uri uri, Context context) {
         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+    }
 
-        // The preferred flag-based strategy does not work with all intent types for Android <= 4.4
-        // bug report: https://issuetracker.google.com/issues/37005552
-        // workaround: https://stackoverflow.com/a/18332000/137744
-        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.KITKAT) {
-            List<ResolveInfo> resInfoList = context.getPackageManager()
-                    .queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY);
-
-            for (ResolveInfo resolveInfo : resInfoList) {
-                String packageName = resolveInfo.activityInfo.packageName;
-                context.grantUriPermission(packageName, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+    /** Uses the /sdcard symlink to shorten a path, if it's valid to do so. */
+    @SuppressWarnings("PMD.DoNotHardCodeSDCard")
+    public static String simplifyPath(File file) {
+        if (new StorageStateProvider().isScopedStorageUsed()) {
+            return file.getAbsolutePath();
+        } else {
+            // The symlink at /sdcard points to the same location as the storage
+            // path returned by getExternalStorageDirectory() on every Android
+            // device and emulator as far as we know; but, just to be certain
+            // that we don't lie to the user, we'll confirm that's really true.
+            if (!isSdcardSymlinkChecked) {
+                checkIfSdcardSymlinkSameAsExternalStorageDirectory();
+                isSdcardSymlinkChecked = true;  // this check is expensive; only do it once
             }
+            if (isSdcardSymlinkSameAsExternalStorageDirectory) {
+                // They point to the same place, so it's safe to replace the longer
+                // storage path with the short symlink.
+                String storagePath = Environment.getExternalStorageDirectory().getAbsolutePath();
+                String path = file.getAbsolutePath();
+                if (path.startsWith(storagePath + "/")) {
+                    return "/sdcard" + path.substring(storagePath.length());
+                }
+            }
+            return file.getAbsolutePath();
+        }
+    }
+
+    @SuppressWarnings("PMD.DoNotHardCodeSDCard")
+    public static String simplifyScopedStoragePath(String path) {
+        if (path != null && path.startsWith("/storage/emulated/0/")) {
+            return "/sdcard/" + path.substring("/storage/emulated/0/".length());
+        }
+
+        return path;
+    }
+
+    /** Checks whether /sdcard points to the same place as getExternalStorageDirectory(). */
+    @SuppressWarnings("PMD.DoNotHardCodeSDCard")
+    @SuppressFBWarnings(
+        value = "DMI_HARDCODED_ABSOLUTE_FILENAME",
+        justification = "The purpose of this function is to test this specific path."
+    )
+    private static void checkIfSdcardSymlinkSameAsExternalStorageDirectory() {
+        try {
+            // createTempFile() guarantees a randomly named file that did not previously exist.
+            File shortPathFile = File.createTempFile("odk", null, new File("/sdcard"));
+            try {
+                String name = shortPathFile.getName();
+                File longPathFile = new File(Environment.getExternalStorageDirectory(), name);
+
+                // If we delete the file via one path and the file disappears at the
+                // other path, then we know that both paths point to the same place.
+                if (shortPathFile.exists() && longPathFile.exists()) {
+                    longPathFile.delete();
+                    if (!shortPathFile.exists()) {
+                        isSdcardSymlinkSameAsExternalStorageDirectory = true;
+                        return;
+                    }
+                }
+            } finally {
+                shortPathFile.delete();
+            }
+        } catch (IOException e) { /* ignore */ }
+        isSdcardSymlinkSameAsExternalStorageDirectory = false;
+    }
+
+    /** Iterates over all directories and files under a root path. */
+    public static Iterable<File> walk(File root) {
+        return () -> new Walker(root, true);
+    }
+
+    public static Iterable<File> walkBreadthFirst(File root) {
+        return () -> new Walker(root, false);
+    }
+
+    /** An iterator that walks over all the directories and files under a given path. */
+    private static class Walker implements Iterator<File> {
+        private final List<File> queue = new ArrayList<>();
+        private final boolean depthFirst;
+
+        Walker(File root, boolean depthFirst) {
+            queue.add(root);
+            this.depthFirst = depthFirst;
+        }
+
+        @Override public boolean hasNext() {
+            return !queue.isEmpty();
+        }
+
+        @Override public File next() {
+            if (queue.isEmpty()) {
+                throw new NoSuchElementException();
+            }
+            File next = queue.remove(0);
+            if (next.isDirectory()) {
+                queue.addAll(depthFirst ? 0 : queue.size(), Arrays.asList(next.listFiles()));
+            }
+            return next;
         }
     }
 }

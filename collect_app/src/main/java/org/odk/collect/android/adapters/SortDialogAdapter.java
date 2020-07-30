@@ -58,10 +58,12 @@ public class SortDialogAdapter extends RecyclerView.Adapter<SortDialogAdapter.Vi
     @Override
     public void onBindViewHolder(@NonNull ViewHolder viewHolder, int position) {
         viewHolder.txtViewTitle.setText(sortList[position]);
-        int color = position == selectedSortingOrder ? themeUtils.getAccentColor() : themeUtils.getPrimaryTextColor();
+        int color = position == selectedSortingOrder ? themeUtils.getAccentColor() : themeUtils.getColorOnSurface();
         viewHolder.txtViewTitle.setTextColor(color);
         try {
-            viewHolder.imgViewIcon.setImageResource(ApplicationConstants.getSortLabelToIconMap().get(sortList[position]));
+            int iconId = ApplicationConstants.getSortLabelToIconMap().get(sortList[position]);
+            viewHolder.imgViewIcon.setImageResource(iconId);
+            viewHolder.imgViewIcon.setTag(iconId);
             viewHolder.imgViewIcon.setImageDrawable(DrawableCompat.wrap(viewHolder.imgViewIcon.getDrawable()).mutate());
             DrawableCompat.setTintList(viewHolder.imgViewIcon.getDrawable(), position == selectedSortingOrder ? ColorStateList.valueOf(color) : null);
         } catch (NullPointerException e) {
@@ -96,7 +98,7 @@ public class SortDialogAdapter extends RecyclerView.Adapter<SortDialogAdapter.Vi
 
         public void updateItemColor(int selectedSortingOrder) {
             ViewHolder previousHolder = (ViewHolder) recyclerView.findViewHolderForAdapterPosition(selectedSortingOrder);
-            previousHolder.txtViewTitle.setTextColor(themeUtils.getPrimaryTextColor());
+            previousHolder.txtViewTitle.setTextColor(themeUtils.getColorOnSurface());
             txtViewTitle.setTextColor(themeUtils.getAccentColor());
             try {
                 DrawableCompat.setTintList(previousHolder.imgViewIcon.getDrawable(), null);

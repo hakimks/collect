@@ -17,19 +17,23 @@ package org.odk.collect.android.provider;
 import android.content.ContentProvider;
 import android.content.ContentUris;
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.UriMatcher;
 import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteQueryBuilder;
 import android.net.Uri;
-import androidx.annotation.NonNull;
 import android.text.TextUtils;
+
+import androidx.annotation.NonNull;
 
 import org.odk.collect.android.R;
 import org.odk.collect.android.application.Collect;
 import org.odk.collect.android.database.helpers.InstancesDatabaseHelper;
 import org.odk.collect.android.provider.InstanceProviderAPI.InstanceColumns;
+import org.odk.collect.android.storage.StorageInitializer;
+import org.odk.collect.android.storage.StoragePathProvider;
 import org.odk.collect.android.utilities.MediaUtils;
 
 import java.io.File;
@@ -52,20 +56,28 @@ public class InstanceProvider extends ContentProvider {
     private static final UriMatcher URI_MATCHER;
 
     private static InstancesDatabaseHelper dbHelper;
-    
+
     private synchronized InstancesDatabaseHelper getDbHelper() {
         // wrapper to test and reset/set the dbHelper based upon the attachment state of the device.
         try {
-            Collect.createODKDirs();
+            new StorageInitializer().createOdkDirsOnStorage();
         } catch (RuntimeException e) {
             return null;
         }
 
-        if (dbHelper == null) {
-            dbHelper = new InstancesDatabaseHelper();
+        boolean databaseNeedsUpgrade = InstancesDatabaseHelper.databaseNeedsUpgrade();
+        if (dbHelper == null || (databaseNeedsUpgrade && !InstancesDatabaseHelper.isDatabaseBeingMigrated())) {
+            if (databaseNeedsUpgrade) {
+                InstancesDatabaseHelper.databaseMigrationStarted();
+            }
+            recreateDatabaseHelper();
         }
 
         return dbHelper;
+    }
+
+    public static void recreateDatabaseHelper() {
+        dbHelper = new InstancesDatabaseHelper();
     }
 
     @Override
@@ -158,12 +170,6 @@ public class InstanceProvider extends ContentProvider {
                 values.put(InstanceColumns.LAST_STATUS_CHANGE_DATE, now);
             }
 
-            if (!values.containsKey(InstanceColumns.DISPLAY_SUBTEXT)) {
-                Date today = new Date();
-                String text = getDisplaySubtext(InstanceProviderAPI.STATUS_INCOMPLETE, today);
-                values.put(InstanceColumns.DISPLAY_SUBTEXT, text);
-            }
-
             if (!values.containsKey(InstanceColumns.STATUS)) {
                 values.put(InstanceColumns.STATUS, InstanceProviderAPI.STATUS_INCOMPLETE);
             }
@@ -176,29 +182,29 @@ public class InstanceProvider extends ContentProvider {
             }
         }
 
-        throw new SQLException("Failed to insert row into " + uri);
+        throw new SQLException("Failed to insert into the instances database.");
     }
 
-    private String getDisplaySubtext(String state, Date date) {
+    public static String getDisplaySubtext(Context context, String state, Date date) {
         try {
             if (state == null) {
-                return new SimpleDateFormat(getContext().getString(R.string.added_on_date_at_time),
+                return new SimpleDateFormat(context.getString(R.string.added_on_date_at_time),
                         Locale.getDefault()).format(date);
             } else if (InstanceProviderAPI.STATUS_INCOMPLETE.equalsIgnoreCase(state)) {
-                return new SimpleDateFormat(getContext().getString(R.string.saved_on_date_at_time),
+                return new SimpleDateFormat(context.getString(R.string.saved_on_date_at_time),
                         Locale.getDefault()).format(date);
             } else if (InstanceProviderAPI.STATUS_COMPLETE.equalsIgnoreCase(state)) {
-                return new SimpleDateFormat(getContext().getString(R.string.finalized_on_date_at_time),
+                return new SimpleDateFormat(context.getString(R.string.finalized_on_date_at_time),
                         Locale.getDefault()).format(date);
             } else if (InstanceProviderAPI.STATUS_SUBMITTED.equalsIgnoreCase(state)) {
-                return new SimpleDateFormat(getContext().getString(R.string.sent_on_date_at_time),
+                return new SimpleDateFormat(context.getString(R.string.sent_on_date_at_time),
                         Locale.getDefault()).format(date);
             } else if (InstanceProviderAPI.STATUS_SUBMISSION_FAILED.equalsIgnoreCase(state)) {
                 return new SimpleDateFormat(
-                        getContext().getString(R.string.sending_failed_on_date_at_time),
+                        context.getString(R.string.sending_failed_on_date_at_time),
                         Locale.getDefault()).format(date);
             } else {
-                return new SimpleDateFormat(getContext().getString(R.string.added_on_date_at_time),
+                return new SimpleDateFormat(context.getString(R.string.added_on_date_at_time),
                         Locale.getDefault()).format(date);
             }
         } catch (IllegalArgumentException e) {
@@ -259,8 +265,8 @@ public class InstanceProvider extends ContentProvider {
                         if (del != null && del.getCount() > 0) {
                             del.moveToFirst();
                             do {
-                                String instanceFile = del.getString(
-                                        del.getColumnIndex(InstanceColumns.INSTANCE_FILE_PATH));
+                                String instanceFile = new StoragePathProvider().getAbsoluteInstanceFilePath(del.getString(
+                                        del.getColumnIndex(InstanceColumns.INSTANCE_FILE_PATH)));
                                 File instanceDir = (new File(instanceFile)).getParentFile();
                                 deleteAllFilesInDirectory(instanceDir);
                             } while (del.moveToNext());
@@ -284,8 +290,8 @@ public class InstanceProvider extends ContentProvider {
                             c.moveToFirst();
                             status = c.getString(c.getColumnIndex(InstanceColumns.STATUS));
                             do {
-                                String instanceFile = c.getString(
-                                        c.getColumnIndex(InstanceColumns.INSTANCE_FILE_PATH));
+                                String instanceFile = new StoragePathProvider().getAbsoluteInstanceFilePath(c.getString(
+                                        c.getColumnIndex(InstanceColumns.INSTANCE_FILE_PATH)));
                                 File instanceDir = (new File(instanceFile)).getParentFile();
                                 deleteAllFilesInDirectory(instanceDir);
                             } while (c.moveToNext());
@@ -296,11 +302,16 @@ public class InstanceProvider extends ContentProvider {
                         }
                     }
 
-                    //We are going to update the status, if the form is submitted
-                    //We will not delete the record in table but we will delete the file
+                    // Keep sent instance database rows but delete corresponding files
                     if (status != null && status.equals(InstanceProviderAPI.STATUS_SUBMITTED)) {
                         ContentValues cv = new ContentValues();
                         cv.put(InstanceColumns.DELETED_DATE, System.currentTimeMillis());
+
+                        // Geometry fields represent data inside the form which can be very
+                        // sensitive so they are removed on delete.
+                        cv.put(InstanceColumns.GEOMETRY_TYPE, (String) null);
+                        cv.put(InstanceColumns.GEOMETRY, (String) null);
+
                         count = Collect.getInstance().getContentResolver().update(uri, cv, null, null);
                     } else {
                         String[] newWhereArgs;
@@ -348,34 +359,18 @@ public class InstanceProvider extends ContentProvider {
                 values.put(InstanceColumns.LAST_STATUS_CHANGE_DATE, now);
             }
 
-            String status;
+            // Don't update last status change date if an instance is being deleted
+            if (values.containsKey(InstanceColumns.DELETED_DATE)) {
+                values.remove(InstanceColumns.LAST_STATUS_CHANGE_DATE);
+            }
+
             switch (URI_MATCHER.match(uri)) {
                 case INSTANCES:
-                    if (values.containsKey(InstanceColumns.STATUS)) {
-                        status = values.getAsString(InstanceColumns.STATUS);
-
-                        if (!values.containsKey(InstanceColumns.DISPLAY_SUBTEXT)) {
-                            Date today = new Date();
-                            String text = getDisplaySubtext(status, today);
-                            values.put(InstanceColumns.DISPLAY_SUBTEXT, text);
-                        }
-                    }
-
                     count = db.update(INSTANCES_TABLE_NAME, values, where, whereArgs);
                     break;
 
                 case INSTANCE_ID:
                     String instanceId = uri.getPathSegments().get(1);
-
-                    if (values.containsKey(InstanceColumns.STATUS)) {
-                        status = values.getAsString(InstanceColumns.STATUS);
-
-                        if (!values.containsKey(InstanceColumns.DISPLAY_SUBTEXT)) {
-                            Date today = new Date();
-                            String text = getDisplaySubtext(status, today);
-                            values.put(InstanceColumns.DISPLAY_SUBTEXT, text);
-                        }
-                    }
 
                     String[] newWhereArgs;
                     if (whereArgs == null || whereArgs.length == 0) {
@@ -423,8 +418,8 @@ public class InstanceProvider extends ContentProvider {
         sInstancesProjectionMap.put(InstanceColumns.STATUS, InstanceColumns.STATUS);
         sInstancesProjectionMap.put(InstanceColumns.LAST_STATUS_CHANGE_DATE,
                 InstanceColumns.LAST_STATUS_CHANGE_DATE);
-        sInstancesProjectionMap.put(InstanceColumns.DISPLAY_SUBTEXT,
-                InstanceColumns.DISPLAY_SUBTEXT);
         sInstancesProjectionMap.put(InstanceColumns.DELETED_DATE, InstanceColumns.DELETED_DATE);
+        sInstancesProjectionMap.put(InstanceColumns.GEOMETRY, InstanceColumns.GEOMETRY);
+        sInstancesProjectionMap.put(InstanceColumns.GEOMETRY_TYPE, InstanceColumns.GEOMETRY_TYPE);
     }
 }

@@ -17,7 +17,6 @@
 package org.odk.collect.android.widgets;
 
 import android.content.Context;
-import android.os.Build;
 import androidx.annotation.IdRes;
 import androidx.annotation.LayoutRes;
 import androidx.annotation.Nullable;
@@ -30,19 +29,23 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 
 import org.javarosa.core.model.RangeQuestion;
-import org.javarosa.form.api.FormEntryPrompt;
 import org.odk.collect.android.R;
 import org.odk.collect.android.activities.FormEntryActivity;
+import org.odk.collect.android.formentry.questions.QuestionDetails;
+import org.odk.collect.android.formentry.questions.WidgetViewUtils;
 import org.odk.collect.android.fragments.dialogs.NumberPickerDialog;
 import org.odk.collect.android.utilities.ToastUtils;
-import org.odk.collect.android.widgets.interfaces.ButtonWidget;
+import org.odk.collect.android.widgets.interfaces.ButtonClickListener;
 
 import java.math.BigDecimal;
 
 import timber.log.Timber;
 
+import static org.odk.collect.android.formentry.questions.WidgetViewUtils.createAnswerTextView;
+import static org.odk.collect.android.formentry.questions.WidgetViewUtils.createSimpleButton;
+
 @SuppressWarnings("BigDecimalMethodWithoutRoundingCalled")
-public abstract class RangeWidget extends QuestionWidget implements ButtonWidget, SeekBar.OnSeekBarChangeListener {
+public abstract class RangeWidget extends QuestionWidget implements ButtonClickListener, SeekBar.OnSeekBarChangeListener {
 
     private static final String VERTICAL_APPEARANCE = "vertical";
     private static final String NO_TICKS_APPEARANCE = "no-ticks";
@@ -57,29 +60,30 @@ public abstract class RangeWidget extends QuestionWidget implements ButtonWidget
     protected int elementCount;
 
     @Nullable
-    protected TextView currentValue;
+    public
+    TextView currentValue;
 
     private int progress;
-    private SeekBar seekBar;
+    public SeekBar seekBar;
     private LinearLayout view;
 
     private boolean isPickerAppearance;
     private boolean suppressFlingGesture;
 
-    private Button pickerButton;
-    private TextView answerTextView;
+    public Button pickerButton;
+    public TextView answerTextView;
 
-    public RangeWidget(Context context, FormEntryPrompt prompt) {
-        super(context, prompt);
+    public RangeWidget(Context context, QuestionDetails questionDetails) {
+        super(context, questionDetails);
 
         setUpWidgetParameters();
         setUpAppearance();
 
-        if (prompt.isReadOnly() && !isPickerAppearance) {
+        if (questionDetails.getPrompt().isReadOnly() && !isPickerAppearance) {
             seekBar.setEnabled(false);
         }
 
-        addAnswerView(view);
+        addAnswerView(view, WidgetViewUtils.getStandardMargin(context));
     }
 
     @Override
@@ -146,9 +150,7 @@ public abstract class RangeWidget extends QuestionWidget implements ButtonWidget
         } else {
             seekBar.setProgress(progress);
             actualValue = null;
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                seekBar.setSplitTrack(false);
-            }
+            seekBar.setSplitTrack(false);
             seekBar.getThumb().mutate().setAlpha(0);
             setUpActualValueLabel();
         }
@@ -168,15 +170,7 @@ public abstract class RangeWidget extends QuestionWidget implements ButtonWidget
         seekBar.setOnSeekBarChangeListener(this);
         if (isRTL()) {
             float rotate = seekBar.getRotation();
-            if (Build.VERSION.SDK_INT == Build.VERSION_CODES.KITKAT ||
-                    Build.VERSION.SDK_INT == Build.VERSION_CODES.JELLY_BEAN_MR2) {
-                seekBar.setRotation(180 - rotate);
-            } else if (Build.VERSION.SDK_INT > Build.VERSION_CODES.KITKAT ||
-                    Build.VERSION.SDK_INT == Build.VERSION_CODES.JELLY_BEAN_MR1) {
-                seekBar.setRotation(360 - rotate);
-            } else {
-                seekBar.setRotation(rotate);
-            }
+            seekBar.setRotation(360 - rotate);
         }
 
         seekBar.setOnTouchListener(new SeekBar.OnTouchListener() {
@@ -228,9 +222,9 @@ public abstract class RangeWidget extends QuestionWidget implements ButtonWidget
             loadAppearance(R.layout.range_widget_horizontal, R.id.seek_bar);
 
         } else if (appearance.contains(PICKER_APPEARANCE)) {
-            pickerButton = getSimpleButton(getContext().getString(R.string.select_value));
+            pickerButton = createSimpleButton(getContext(), getFormEntryPrompt().isReadOnly(), getContext().getString(R.string.select_value), getAnswerFontSize(), this);
 
-            answerTextView = getAnswerTextView();
+            answerTextView = createAnswerTextView(getContext(), getAnswerFontSize());
             isPickerAppearance = true;
 
             view = new LinearLayout(getContext());

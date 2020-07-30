@@ -3,12 +3,7 @@
   <string name="show_password">Mostra a senha</string>
   <string name="activity_not_found">Não foi encontrada nenhuma atividade por ser tratada: %s</string>
   <string name="view_image">Ver Imagem</string>
-  <string name="add_another">Adicionar Grupo</string>
-  <string name="add_another_repeat">Adicionar outro grupo \"%s\"?</string>
-  <string name="add_repeat">Adicionar um novo grupo \"%s\"?</string>
-  <string name="add_repeat_no">Não adicionar</string>
-  <string name="audio_file_error">Não foi especificado arquivo de áudio</string>
-  <string name="audio_file_invalid">Arquivo de áudio %s inválido.</string>
+  <!--This sentence is used in the dialog for adding repeats and will be completed by a singular noun usually. Examples would be ‘Add “observation”?’ or ‘Add “Reading”?’. If the phrase doesn’t make sense in your language you can add a word like “new”, being careful of gender/plural.-->
   <string name="cancel">Cancelar</string>
   <string name="cancel_loading_form">Cancelar</string>
   <string name="cancel_location">Cancelar</string>
@@ -46,8 +41,6 @@
   <string name="do_not_change">Cancelar</string>
   <string name="do_not_exit">Cancelar</string>
   <string name="do_not_save">Ignorar Alterações</string>
-  <string name="entering_repeat">Adicionar Grupo</string>
-  <string name="entering_repeat_ask">Adicionar Novo Grupo?</string>
   <string name="enter_data">Formulário em Branco</string>
   <string name="enter_data_button">Formulário em Branco</string>
   <string name="error_occured">Ocorreu um erro</string>
@@ -71,15 +64,9 @@
   <string name="jump_to_beginning">Ir para o Início</string>
   <string name="jump_to_end">Ir para o Fim</string>
   <string name="jump_to_previous">Subir</string>
-  <string name="leave_repeat_yes">Não adicionar</string>
-  <string name="leaving_repeat_ask">Adicionar um ou mais grupos?</string>
-  <string name="list_failed_with_error">Listagem de formulários falhou. %s.</string>
-  <string name="loading_form">Carregando Formulário</string>
+    <string name="loading_form">Carregando Formulário</string>
   <string name="load_remote_form_error">Erro na Listagem de Formulários</string>
-  <string name="location_provider_accuracy">Usando %1$s. Precisão de %2$s m.</string>
-  <string name="location_accuracy">Precisão de %1$s m</string>
-  <string name="main_menu">Menu Principal</string>
-  <string name="main_menu_details">Coleta de dados facilitada…</string>
+    <string name="location_accuracy">Precisão de %1$s m</string>
   <string name="manage_files">Apagar Formulário Salvo</string>
   <string name="mark_finished">Marcar formulário como finalizado</string>
   <string name="noselect_error">Desculpe, você não selecionou nenhum formulário!</string>
@@ -90,8 +77,6 @@
   <string name="no_items_display_instances">Nada disponível para exibir.\n\nTente finalizar formulários salvos antes de enviar.</string>
   <string name="ok">OK</string>
   <string name="parse_error">Desculpe, não é possível analisar formulário.</string>
-  <string name="parse_legacy_formlist_failed">O servidor não tinha formulários disponíveis compatíveis com Aggregate 0.9.x. : %s</string>
-  <string name="parse_openrosa_formlist_failed">O servidor não tinha formulários disponíveis compatíveis com OpenRosa version 1.0 standard: %s</string>
   <string name="password">Senha</string>
   <string name="play_video">Assistir o Vídeo</string>
   <string name="please_wait">Por favor, aguarde um pouco.</string>
@@ -110,8 +95,6 @@
   <string name="send_data">Enviar Formulário Finalizado</string>
   <string name="send_data_button">Enviar formulário finalizado (%s)</string>
   <string name="send_selected_data">Enviar selecionado</string>
-  <string name="send_selected_data_internet">Enviar (Internet)</string>
-  <string name="send_selected_data_sms">Enviar (SMS)</string>
   <string name="view_sent_forms">Ver Formulário Enviado</string>
   <string name="view_sent_forms_button">Visualizar formulário enviado (%s)</string>
   <string name="server_auth_credentials">Nome de usuário ou senha inválidos para o servidor: %s</string>
@@ -133,19 +116,12 @@
   <string name="change_splash_path">Trocar Imagem</string>
   <string name="keep_changes">Salvar Alterações</string>
   <string name="change_formlist_url">Listagem do caminho do formulário (adicionado do URL do Servidor)</string>
-  <string name="change_protocol">Protocolo</string>
-  <string name="change_submission_url">Caminho para submeter (adicionado do URL do Servidor)</string>
+    <string name="change_submission_url">Caminho para submeter (adicionado do URL do Servidor)</string>
   <string name="formlist_url">Lista de Caminho do Formulário</string>
   <string name="submission_url">Caminho para submeter</string>
   <string name="font_size">Tamanho da Fonte do Texto</string>
   <string name="change_font_size">Tamanho da Fonte do Texto</string>
-  <string name="access_error">Erro enquanto acessa %s:</string>
-  <string name="manifest_server_error">Resposta não retorna uma versão OpenRosa — servidor ruim?</string>
-  <string name="root_element_error">Elemento raiz não é &amp;lt;manifest\&gt; — foi %s</string>
-  <string name="root_namespace_error">Root element Namespace - incorreto: %s</string>
-  <string name="manifest_tag_error">Entrada %s está faltando uma ou mais tags: arquivo, hash, ou downloadURL</string>
   <string name="form_download_progress">%1$s. Acessando arquivos de mídia: %2$s de %3$s</string>
-  <string name="file_fetch_failed">Erro: %2$s (%3$s) em %1$s</string>
   <string name="fetching_manifest">%s. Acessando manifesto</string>
   <string name="success">Sucesso</string>
   <string name="failures">Falhas</string>
@@ -162,9 +138,7 @@ Escolher Imagem</string>
   <string name="save_as_error">Nome salvo não pode ser em vazio!</string>
   <string name="edit_prompt">Editar Prompt</string>
   <string name="selected_google_account_text">Conta Google</string>
-  <string name="server_platform_odk_aggregate">ODK Aggregate</string>
-  <string name="server_platform_other">Outro</string>
-  <string name="font_size_extra_large">Extra Grande</string>
+    <string name="font_size_extra_large">Extra Grande</string>
   <string name="font_size_large">Grande</string>
   <string name="font_size_medium">Média</string>
   <string name="font_size_small">Pequena</string>
@@ -208,7 +182,6 @@ Escolher Imagem</string>
   <string name="autosend">Enviar automaticamente</string>
   <string name="found_in_main">Desmarque para esconder no Menu Principal</string>
   <string name="found_in_settings">Desmarque para não exibir nas Configurações Gerais  </string>
-  <string name="save_preferences">Salvar configurações no disco</string>
   <string name="form_forward">Próximo</string>
   <string name="navigation">Navegação</string>
   <string name="swipe_navigation">Use swipes horizontais</string>
@@ -262,13 +235,7 @@ Escolher Imagem</string>
   <string name="go_drive">Meu Disco</string>
   <string name="go_shared">Compartilhado comigo</string>
   <string name="modified_on_date_at_time">\'Modificado em\' EEE, MMM dd, yyyy \'às\' HH:mm</string>
-  <string name="aggregate_preferences">Configurações do Agregador ODK.</string>
-  <string name="sms_submission_preferences">Parâmetros de envio SMS</string>
-  <string name="submission_transport">Transporte envio (avançado)</string>
-  <string name="submission_transport_types_title">Enviar submissões por</string>
-  <string name="other_preferences">Configurações de outras plataformas.</string>
-  <string name="google_preferences">Configurações Planilhas Google</string>
-  <string name="google_sheets_url_hint">Os formulários devem configurar um envio. Se não foram, esta URL será utilizada.</string>
+    <string name="google_sheets_url_hint">Os formulários devem configurar um envio. Se não foram, esta URL será utilizada.</string>
   <string name="drive_get_file">Obtendo %1$s e arquivos de mídia.</string>
   <string name="no_google_account">Nenhuma conta do Google foi selecionada!</string>
   <string name="google_set_account">Você selecionou o Google Sheets com seu servidor, por favor selecione um conta Google correspondente em Configurações Gerais antes de continuar.</string>
@@ -295,22 +262,17 @@ Escolher Imagem</string>
   <string name="leave_a_review">Deixe um opinião sua na Play Store</string>
   <string name="leave_a_review_msg">A sua opinião (possivelmente positiva) aumenta a visibilidade da App na Play Store.</string>
   <!--Geo string added in feature-geofeatures branch-->
-  <string name="map_preferences">Cartografia</string>
-  <string name="map_sdk_selector_title">Cartografia SDK</string>
-  <string name="map_sdk_behavior">Cartografia SDK</string>
-  <string name="google_maps_sdk">Google Maps SDK</string>
-  <string name="openstreetmap_sdk">OpenStreetMap SDK</string>
-  <string name="show_map_sdk">Opções SDK de Mostrar Mapa</string>
-  <string name="openmap_streets">Ruas OSM</string>
+  <!--TODO(ping): Delete these openmap_* strings when we're ready to move on from OSMDroid.
+      These strings are only being used to preserve compatibility with pre-existing
+       tile caches, and are not shown in the UI.-->
   <string name="openmap_usgs_topo">Mapa Topográfico Nacional USGS</string>
   <string name="openmap_usgs_sat">Mapa Híbrido Nacional USGS</string>
   <string name="openmap_usgs_img">Mapa de Imagem Nacional USGS</string>
+  <string name="basemap">Mapa base</string>
   <string name="streets">Ruas</string>
   <string name="terrain">Terreno</string>
   <string name="hybrid">Hibrido</string>
   <string name="satellite">Satélite</string>
-  <string name="map_basemap_selector_title">Mapa base</string>
-  <string name="show_map_basemap">Mostra Opções Mapa Base</string>
   <string name="save_point">Salva GeoPoint</string>
   <string name="get_point">Inicia GeoPoint</string>
   <string name="geopoint_view_read_only">Visualiza GeoPoint</string>
@@ -320,9 +282,7 @@ Escolher Imagem</string>
   <string name="start">Iniciar</string>
   <string name="enable_gps">Habilitar GPS</string>
   <string name="geotrace_title">GeoTrace</string>
-    <string name="gps_enable_message">O GPS está desabilitado em seu aparelho. Gostaria de habilitá-lo?</string>
-  <string name="select_offline_layer">Selecionar Layer Desligado</string>
-    <string name="geo_clear_warning">A feature já foi criada. Gostaria de limpar a feature?</string>
+  <string name="geo_clear_warning">A feature já foi criada. Gostaria de limpar a feature?</string>
   <string name="geo_exit_warning">Descartar mudanças e retornar ao ODK?</string>
   <string name="polygon_validator">Precisa ter pelo menos 3 pontos para criar Polígono</string>
   <string name="polyline_validator">Precisa ter pelo menos 2 pontos para criar uma Cadeia de Linhas</string>
@@ -427,28 +387,17 @@ Escolher Imagem</string>
   <string name="select_time">Selecionar hora</string>
   <string name="no_date_selected">Nenhuma data selecionada</string>
   <string name="no_time_selected">Nenhuma hora selecionada</string>
-  <string name="import_settings">Importar/Exportar configurações</string>
-  <string name="qr_code">QR code</string>
-  <string name="scan_qrcode">Digitalizar código de outro dispositivo</string>
   <string name="successfully_imported_settings">Configurações importadas com sucesso</string>
   <string name="encoding_max_limit">Número máximo de caracteres alcançado: QR code não pode ser gerado para todas as configurações</string>
   <string name="share">Compartilhar</string>
-  <string name="select_qrcode">Selecionar código do Cartão SD</string>
   <string name="turn_on_flashlight">Ligue a luz do flash</string>
   <string name="turn_off_flashlight">Desligue a luz do flash</string>
-  <string name="qrcode_with_both_passwords">Este QR code inclui suas senhas de administração e de servidor. Por favor use com cuidado. \n(Toque para remover as senhas)</string>
-  <string name="qrcode_without_passwords">Este QR code não contém suas senhas de administração e de servidor. \n(Toque para adicionar as senhas)</string>
-  <string name="qrcode_with_admin_password">Este QR code contém sua senha de administração. Por favor use com cuidado. \n(Toque para remover a senha)</string>
-  <string name="qrcode_with_server_password">Este QR code contém sua senha do servidor. \n(Toque para remover a senha)</string>
-  <string name="import_export_settings">Importar/Exportar configurações</string>
-  <string name="qrcode_scanner_prompt">Posicione o QR code dentro do retângulo</string>
   <string name="barcode_scanner_prompt">Coloque o código de barras dentro do retângulo</string>
   <string name="server_password">Senha do servidor</string>
   <string name="include_password_dialog">Senha Adicionada no Código</string>
   <string name="generate">Gerar</string>
   <string name="invalid_qrcode">QR code não contém configurações válidas</string>
-  <string name="share_qrcode">Compartilhar QR code</string>
-  <string name="take_picture_instruction">Selecione na tela para tirar uma fotografia</string>
+    <string name="take_picture_instruction">Selecione na tela para tirar uma fotografia</string>
   <string name="error_front_camera_unavailable">A câmera da frente não está disponível neste dispositivo</string>
   <string name="camera_error">Este dispositivo não suporta a API da Câmera2</string>
   <string name="invalid_range_widget">Esta ferramenta possui parâmetros inválidos!</string>
@@ -467,7 +416,6 @@ Escolher Imagem</string>
   <string name="wifi_autosend">Somente wifi</string>
   <string name="cellular_autosend">Somente celular</string>
   <string name="wifi_cellular_autosend">Wifi ou celular</string>
-  <string name="map_basemap_behavior_title">Mapa base</string>
   <string name="form_management_preferences">Gestão de formulários</string>
   <string name="form_submission_category">Envio de formulários</string>
   <string name="form_filling_category">Preenchimento de formulários</string>
@@ -481,7 +429,6 @@ Escolher Imagem</string>
   <string name="type">Tipo</string>
   <string name="form_entry">Desmarque para ocultar da entrada de formulário</string>
   <string name="use_device_language">Utilizar idioma do dispositivo</string>
-  <string name="not_supported_offline_layer_format">O arquivo do layer selecionado utiliza o formato PBF que não é suportado!</string>
   <string name="invalid_email_address">Endereço de e-mail inválido!</string>
   <string name="sort_by">Organizar por</string>
   <string name="server">Servidor</string>
@@ -500,7 +447,6 @@ Escolher Imagem</string>
   <string name="newer_version_of_a_form_info">Esta é uma atualização de um formulário que você possui</string>
   <string name="form_update_category">Atualização de formulários</string>
   <string name="periodic_form_updates_check_title">Verificação periódica de formulários</string>
-  <string name="never">Nunca</string>
   <string name="every_fifteen_minutes">A cada 15 minutos</string>
   <string name="every_one_hour">A cada hora</string>
   <string name="every_six_hours">A cada 6 horas</string>
@@ -513,5 +459,4 @@ Escolher Imagem</string>
   <string name="theme_dark">Tema escuro</string>
   <string name="hide_old_form_versions_setting_title">Esconder versões antigas de formulários</string>
   <string name="hide_old_form_versions_setting_summary">Somente a versão mais recente aparecerá em Formulário em Branco</string>
-  <!--Sms submission-->
 </resources>

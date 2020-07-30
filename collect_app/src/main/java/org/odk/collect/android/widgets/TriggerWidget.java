@@ -16,27 +16,42 @@ package org.odk.collect.android.widgets;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
-import androidx.appcompat.widget.AppCompatCheckBox;
 import android.util.TypedValue;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
 import android.widget.CheckBox;
+
+import androidx.appcompat.widget.AppCompatCheckBox;
 
 import org.javarosa.core.model.data.IAnswerData;
 import org.javarosa.core.model.data.StringData;
 import org.javarosa.form.api.FormEntryPrompt;
 import org.odk.collect.android.R;
-import org.odk.collect.android.utilities.ViewIds;
+import org.odk.collect.android.formentry.questions.QuestionDetails;
 
 @SuppressLint("ViewConstructor")
 public class TriggerWidget extends QuestionWidget {
 
-    public static final String OK_TEXT = "OK";
+    private static final String OK_TEXT = "OK";
 
     private AppCompatCheckBox triggerButton;
 
-    public TriggerWidget(Context context, FormEntryPrompt prompt) {
+    public TriggerWidget(Context context, QuestionDetails prompt) {
         super(context, prompt);
+    }
 
-        setUpWidget();
+    @Override
+    protected View onCreateAnswerView(Context context, FormEntryPrompt prompt, int answerTextSize) {
+        ViewGroup answerView = (ViewGroup) LayoutInflater.from(context).inflate(R.layout.trigger_widget_answer, null);
+
+        triggerButton = answerView.findViewById(R.id.check_box);
+        triggerButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, answerTextSize);
+        triggerButton.setEnabled(!prompt.isReadOnly());
+        triggerButton.setChecked(OK_TEXT.equals(prompt.getAnswerText()));
+        triggerButton.setOnCheckedChangeListener((buttonView, isChecked) -> widgetValueChanged());
+
+        return answerView;
     }
 
     @Override
@@ -61,20 +76,8 @@ public class TriggerWidget extends QuestionWidget {
         triggerButton.cancelLongPress();
     }
 
-    public CheckBox getTriggerButton() {
+    public CheckBox getCheckBox() {
         return triggerButton;
     }
 
-    private void setUpWidget() {
-        triggerButton = new AppCompatCheckBox(getContext());
-        triggerButton.setId(ViewIds.generateViewId());
-        triggerButton.setText(getContext().getString(R.string.trigger));
-        triggerButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, getAnswerFontSize());
-        triggerButton.setEnabled(!getFormEntryPrompt().isReadOnly());
-        triggerButton.setChecked(OK_TEXT.equals(getFormEntryPrompt().getAnswerText()));
-
-        triggerButton.setOnCheckedChangeListener((buttonView, isChecked) -> widgetValueChanged());
-
-        addAnswerView(triggerButton);
-    }
 }

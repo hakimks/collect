@@ -16,16 +16,15 @@ package org.odk.collect.android.widgets;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.view.Gravity;
 import android.widget.LinearLayout;
 
 import org.javarosa.core.model.data.DateTimeData;
 import org.javarosa.core.model.data.IAnswerData;
-import org.javarosa.form.api.FormEntryPrompt;
 import org.joda.time.LocalDateTime;
+import org.odk.collect.android.formentry.questions.QuestionDetails;
 import org.odk.collect.android.listeners.WidgetValueChangedListener;
-import org.odk.collect.android.utilities.WidgetAppearanceUtils;
-import org.odk.collect.android.widgets.interfaces.BinaryWidget;
+import org.odk.collect.android.widgets.interfaces.BinaryDataReceiver;
+import org.odk.collect.android.widgets.interfaces.ButtonClickListener;
 
 /**
  * Displays a DatePicker widget. DateWidget handles leap years and does not allow dates that do not
@@ -36,36 +35,21 @@ import org.odk.collect.android.widgets.interfaces.BinaryWidget;
  */
 
 @SuppressLint("ViewConstructor")
-public class DateTimeWidget extends QuestionWidget implements BinaryWidget, WidgetValueChangedListener {
+public class DateTimeWidget extends QuestionWidget implements BinaryDataReceiver, WidgetValueChangedListener, ButtonClickListener {
 
-    private AbstractDateWidget dateWidget;
-    private TimeWidget timeWidget;
+    DateWidget dateWidget;
+    TimeWidget timeWidget;
 
-    public DateTimeWidget(Context context, FormEntryPrompt prompt) {
+    public DateTimeWidget(Context context, QuestionDetails prompt) {
         super(context, prompt);
 
-        setGravity(Gravity.START);
+        dateWidget = new DateWidget(context, prompt, true);
+        timeWidget = new TimeWidget(context, prompt, true);
 
-        String appearance = prompt.getQuestion().getAppearanceAttr();
-        if (appearance != null && appearance.contains(WidgetAppearanceUtils.ETHIOPIAN)) {
-            dateWidget = new EthiopianDateWidget(context, prompt);
-        } else if (appearance != null && appearance.contains(WidgetAppearanceUtils.COPTIC)) {
-            dateWidget = new CopticDateWidget(context, prompt);
-        } else if (appearance != null && appearance.contains(WidgetAppearanceUtils.ISLAMIC)) {
-            dateWidget = new IslamicDateWidget(context, prompt);
-        } else if (appearance != null && appearance.contains(WidgetAppearanceUtils.BIKRAM_SAMBAT)) {
-            dateWidget = new BikramSambatDateWidget(context, prompt);
-        } else if (appearance != null && appearance.contains(WidgetAppearanceUtils.MYANMAR)) {
-            dateWidget = new MyanmarDateWidget(context, prompt);
-        } else {
-            dateWidget = new DateWidget(context, prompt);
-        }
-        timeWidget = new TimeWidget(context, prompt);
-
-        dateWidget.getQuestionMediaLayout().getView_Text().setVisibility(GONE);
+        dateWidget.getAudioVideoImageTextLabel().getLabelTextView().setVisibility(GONE);
         dateWidget.getHelpTextLayout().setVisibility(GONE);
 
-        timeWidget.getQuestionMediaLayout().getView_Text().setVisibility(GONE);
+        timeWidget.getAudioVideoImageTextLabel().getLabelTextView().setVisibility(GONE);
         timeWidget.getHelpTextLayout().setVisibility(GONE);
 
         LinearLayout linearLayout = new LinearLayout(getContext());
@@ -138,7 +122,7 @@ public class DateTimeWidget extends QuestionWidget implements BinaryWidget, Widg
         dateWidget.setBinaryData(answer);
     }
 
-    public AbstractDateWidget getDateWidget() {
+    public DateWidget getDateWidget() {
         return dateWidget;
     }
 

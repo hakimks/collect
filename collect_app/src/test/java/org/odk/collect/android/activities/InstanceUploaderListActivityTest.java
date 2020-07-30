@@ -1,45 +1,36 @@
 package org.odk.collect.android.activities;
 
-import android.app.Activity;
-import android.app.AlertDialog;
 import android.app.Application;
-import androidx.annotation.NonNull;
 
-import com.google.android.gms.analytics.HitBuilders;
-import com.google.android.gms.analytics.Tracker;
+import androidx.appcompat.app.AlertDialog;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.odk.collect.android.R;
-import org.odk.collect.android.listeners.PermissionListener;
+import org.odk.collect.android.activities.support.AlwaysGrantStoragePermissionsPermissionUtils;
+import org.odk.collect.android.analytics.Analytics;
+import org.odk.collect.android.preferences.GeneralSharedPreferences;
 import org.odk.collect.android.utilities.PermissionUtils;
 import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
-import org.robolectric.RuntimeEnvironment;
 import org.robolectric.fakes.RoboMenuItem;
 import org.robolectric.shadows.ShadowAlertDialog;
-
-import androidx.work.Configuration;
-import androidx.work.WorkManager;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.odk.collect.android.support.RobolectricHelpers.overrideAppDependencyModule;
-import static org.robolectric.Shadows.shadowOf;
 
 @RunWith(RobolectricTestRunner.class)
 public class InstanceUploaderListActivityTest {
 
-    Tracker tracker;
+    Analytics analytics;
 
     @Before
     public void setup() {
-        WorkManager.initialize(RuntimeEnvironment.application, new Configuration.Builder().build());
-
-        tracker = mock(Tracker.class);
+        analytics = mock(Analytics.class);
         overrideAppDependencyModule(new AppDependencyModule(
-                tracker,
+                analytics,
                 new AlwaysGrantStoragePermissionsPermissionUtils()
         ));
     }
@@ -49,41 +40,30 @@ public class InstanceUploaderListActivityTest {
         InstanceUploaderListActivity activity = Robolectric.setupActivity(InstanceUploaderListActivity.class);
 
         activity.onOptionsItemSelected(new RoboMenuItem(R.id.menu_change_view));
-        AlertDialog dialog = ShadowAlertDialog.getLatestAlertDialog();
-        shadowOf(dialog).clickOnItem(1);
+        AlertDialog dialog = (AlertDialog) ShadowAlertDialog.getLatestDialog();
+        dialog.getListView().performItemClick(null, 1, 0L);
 
-        verify(tracker).send(new HitBuilders.EventBuilder()
-                .setCategory("FilterSendForms")
-                .setAction("SentAndUnsent")
-                .build());
+        verify(analytics).logEvent("FilterSendForms", "SentAndUnsent");
     }
 
     private static class AppDependencyModule extends org.odk.collect.android.injection.config.AppDependencyModule {
 
-        private final Tracker tracker;
+        private final Analytics tracker;
         private final PermissionUtils permissionUtils;
 
-        private AppDependencyModule(Tracker tracker, PermissionUtils permissionUtils) {
+        private AppDependencyModule(Analytics tracker, PermissionUtils permissionUtils) {
             this.tracker = tracker;
             this.permissionUtils = permissionUtils;
         }
 
         @Override
-        public Tracker providesTracker(Application application) {
+        public Analytics providesAnalytics(Application application, GeneralSharedPreferences generalSharedPreferences) {
             return tracker;
         }
 
         @Override
         public PermissionUtils providesPermissionUtils() {
             return permissionUtils;
-        }
-    }
-
-    private static class AlwaysGrantStoragePermissionsPermissionUtils extends PermissionUtils {
-
-        @Override
-        public void requestStoragePermissions(Activity activity, @NonNull PermissionListener action) {
-            action.granted();
         }
     }
 }

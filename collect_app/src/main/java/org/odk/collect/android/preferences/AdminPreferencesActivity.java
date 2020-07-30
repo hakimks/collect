@@ -33,6 +33,8 @@ import java.io.ObjectOutputStream;
 
 import timber.log.Timber;
 
+import static org.odk.collect.android.activities.ActivityUtils.startActivityAndCloseAllOthers;
+
 /**
  * Handles admin preferences, which are password-protectable and govern which app features and
  * general preferences the end user of the app will be able to see.
@@ -40,7 +42,8 @@ import timber.log.Timber;
  * @author Thomas Smyth, Sassafras Tech Collective (tom@sassafrastech.com; constraint behavior
  *         option)
  */
-public class AdminPreferencesActivity extends CollectAbstractActivity implements MovingBackwardsDialog.MovingBackwardsDialogListener, ResetSettingsResultDialog.ResetSettingsResultDialogListener {
+public class AdminPreferencesActivity extends CollectAbstractActivity implements MovingBackwardsDialog.MovingBackwardsDialogListener,
+        ResetSettingsResultDialog.ResetSettingsResultDialogListener {
     public static final String ADMIN_PREFERENCES = "admin_prefs";
     public static final String TAG = "AdminPreferencesFragment";
 
@@ -77,25 +80,26 @@ public class AdminPreferencesActivity extends CollectAbstractActivity implements
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_preferences_layout);
         setTheme(new ThemeUtils(this).getSettingsTheme());
 
         setTitle(R.string.admin_preferences);
         if (savedInstanceState == null) {
-            getFragmentManager()
+            getSupportFragmentManager()
                     .beginTransaction()
-                    .add(android.R.id.content, new AdminPreferencesFragment(), TAG)
+                    .add(R.id.preferences_fragment_container, new AdminPreferencesFragment(), TAG)
                     .commit();
         }
     }
 
     @Override
     public void preventOtherWaysOfEditingForm() {
-        AdminPreferencesFragment fragment = (AdminPreferencesFragment) getFragmentManager().findFragmentByTag(TAG);
+        AdminPreferencesFragment fragment = (AdminPreferencesFragment) getSupportFragmentManager().findFragmentByTag(TAG);
         fragment.preventOtherWaysOfEditingForm();
     }
 
     @Override
     public void onDialogClosed() {
-        MainMenuActivity.startActivityAndCloseAllOthers(this);
+        startActivityAndCloseAllOthers(this, MainMenuActivity.class);
     }
 }

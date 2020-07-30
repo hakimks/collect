@@ -23,8 +23,9 @@ import android.webkit.MimeTypeMap;
 
 import org.odk.collect.android.application.Collect;
 import org.odk.collect.android.logic.FormInfo;
-import org.odk.collect.android.provider.FormsProviderAPI;
-import org.odk.collect.android.provider.InstanceProviderAPI;
+import org.odk.collect.android.provider.FormsProviderAPI.FormsColumns;
+import org.odk.collect.android.provider.InstanceProviderAPI.InstanceColumns;
+import org.odk.collect.android.storage.StoragePathProvider;
 
 public final class ContentResolverHelper {
 
@@ -42,16 +43,15 @@ public final class ContentResolverHelper {
         try (Cursor instanceCursor = getContentResolver().query(uri, null, null, null, null)) {
             if (instanceCursor != null && instanceCursor.getCount() > 0) {
                 instanceCursor.moveToFirst();
-                String instancePath = instanceCursor
+                String instancePath = new StoragePathProvider().getAbsoluteInstanceFilePath(instanceCursor
                         .getString(instanceCursor
-                                .getColumnIndex(
-                                        InstanceProviderAPI.InstanceColumns.INSTANCE_FILE_PATH));
+                                .getColumnIndex(InstanceColumns.INSTANCE_FILE_PATH)));
 
                 String jrFormId = instanceCursor
                         .getString(instanceCursor
-                                .getColumnIndex(InstanceProviderAPI.InstanceColumns.JR_FORM_ID));
+                                .getColumnIndex(InstanceColumns.JR_FORM_ID));
                 int idxJrVersion = instanceCursor
-                        .getColumnIndex(InstanceProviderAPI.InstanceColumns.JR_VERSION);
+                        .getColumnIndex(InstanceColumns.JR_VERSION);
 
                 String jrVersion = instanceCursor.isNull(idxJrVersion) ? null
                         : instanceCursor
@@ -67,12 +67,11 @@ public final class ContentResolverHelper {
         try (Cursor c = getContentResolver().query(uri, null, null, null, null)) {
             if (c != null && c.getCount() == 1) {
                 c.moveToFirst();
-                formPath = c.getString(c.getColumnIndex(FormsProviderAPI.FormsColumns.FORM_FILE_PATH));
+                formPath = new StoragePathProvider().getAbsoluteFormFilePath(c.getString(c.getColumnIndex(FormsColumns.FORM_FILE_PATH)));
             }
         }
         return formPath;
     }
-
 
     /**
      * Using contentResolver to get a file's extension by the uri

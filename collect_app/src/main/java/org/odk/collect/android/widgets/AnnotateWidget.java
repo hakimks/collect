@@ -21,18 +21,21 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
-import androidx.core.content.FileProvider;
 import android.view.View;
 import android.widget.Button;
 
-import org.javarosa.form.api.FormEntryPrompt;
 import org.odk.collect.android.BuildConfig;
 import org.odk.collect.android.R;
 import org.odk.collect.android.activities.DrawActivity;
-import org.odk.collect.android.application.Collect;
+import org.odk.collect.android.formentry.questions.QuestionDetails;
+import org.odk.collect.android.formentry.questions.WidgetViewUtils;
 import org.odk.collect.android.listeners.PermissionListener;
+import org.odk.collect.android.storage.StoragePathProvider;
+import org.odk.collect.android.utilities.ContentUriProvider;
 import org.odk.collect.android.utilities.FileUtils;
 import org.odk.collect.android.utilities.WidgetAppearanceUtils;
+import org.odk.collect.android.widgets.interfaces.ButtonClickListener;
+import org.odk.collect.android.widgets.utilities.WaitingForDataRegistry;
 
 import java.io.File;
 import java.util.Locale;
@@ -41,6 +44,7 @@ import timber.log.Timber;
 
 import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
 import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
+import static org.odk.collect.android.formentry.questions.WidgetViewUtils.createSimpleButton;
 import static org.odk.collect.android.utilities.ApplicationConstants.RequestCodes;
 
 /**
@@ -51,32 +55,31 @@ import static org.odk.collect.android.utilities.ApplicationConstants.RequestCode
  * @author Yaw Anokwa (yanokwa@gmail.com)
  */
 @SuppressLint("ViewConstructor")
-public class AnnotateWidget extends BaseImageWidget {
+public class AnnotateWidget extends BaseImageWidget implements ButtonClickListener {
 
-    private Button captureButton;
-    private Button chooseButton;
-    private Button annotateButton;
+    Button captureButton;
+    Button chooseButton;
+    Button annotateButton;
 
-    public AnnotateWidget(Context context, FormEntryPrompt prompt) {
-        super(context, prompt);
+    public AnnotateWidget(Context context, QuestionDetails prompt, WaitingForDataRegistry waitingForDataRegistry) {
+        super(context, prompt, waitingForDataRegistry);
         imageClickHandler = new DrawImageClickHandler(DrawActivity.OPTION_ANNOTATE, RequestCodes.ANNOTATE_IMAGE, R.string.annotate_image);
         imageCaptureHandler = new ImageCaptureHandler();
         setUpLayout();
         addCurrentImageToLayout();
-        addAnswerView(answerLayout);
+        adjustAnnotateButtonAvailability();
+        addAnswerView(answerLayout, WidgetViewUtils.getStandardMargin(context));
     }
 
     @Override
     protected void setUpLayout() {
         super.setUpLayout();
-        captureButton = getSimpleButton(getContext().getString(R.string.capture_image), R.id.capture_image);
+        captureButton = createSimpleButton(getContext(), R.id.capture_image, getFormEntryPrompt().isReadOnly(), getContext().getString(R.string.capture_image), getAnswerFontSize(), this);
 
-        chooseButton = getSimpleButton(getContext().getString(R.string.choose_image), R.id.choose_image);
+        chooseButton = createSimpleButton(getContext(), R.id.choose_image, getFormEntryPrompt().isReadOnly(), getContext().getString(R.string.choose_image), getAnswerFontSize(), this);
 
-        annotateButton = getSimpleButton(getContext().getString(R.string.markup_image), R.id.markup_image);
-        if (binaryName == null) {
-            annotateButton.setEnabled(false);
-        }
+        annotateButton = createSimpleButton(getContext(), R.id.markup_image, getFormEntryPrompt().isReadOnly(), getContext().getString(R.string.markup_image), getAnswerFontSize(), this);
+
         annotateButton.setOnClickListener(v -> imageClickHandler.clickImage("annotateButton"));
 
         answerLayout.addView(captureButton);
@@ -92,6 +95,11 @@ public class AnnotateWidget extends BaseImageWidget {
     public Intent addExtrasToIntent(Intent intent) {
         intent.putExtra(DrawActivity.SCREEN_ORIENTATION, calculateScreenOrientation());
         return intent;
+    }
+
+    @Override
+    protected boolean doesSupportDefaultValues() {
+        return true;
     }
 
     @Override
@@ -142,6 +150,12 @@ public class AnnotateWidget extends BaseImageWidget {
         }
     }
 
+    private void adjustAnnotateButtonAvailability() {
+        if (binaryName == null || imageView == null || imageView.getVisibility() == GONE) {
+            annotateButton.setEnabled(false);
+        }
+    }
+
     private void hideButtonsIfNeeded() {
         if (getFormEntryPrompt().getAppearanceHint() != null
                 && getFormEntryPrompt().getAppearanceHint().toLowerCase(Locale.ENGLISH).contains(WidgetAppearanceUtils.NEW)) {
@@ -171,9 +185,9 @@ public class AnnotateWidget extends BaseImageWidget {
         // the size. boo.
 
         try {
-            Uri uri = FileProvider.getUriForFile(getContext(),
+            Uri uri = ContentUriProvider.getUriForFile(getContext(),
                     BuildConfig.APPLICATION_ID + ".provider",
-                    new File(Collect.TMPFILE_PATH));
+                    new File(new StoragePathProvider().getTmpFilePath()));
             // if this gets modified, the onActivityResult in
             // FormEntyActivity will also need to be updated.
             intent.putExtra(android.provider.MediaStore.EXTRA_OUTPUT, uri);
